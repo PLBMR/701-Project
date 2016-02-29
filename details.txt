@@ -1,0 +1,29 @@
+Project Title:
+    The Political Effectiveness of Recurrent Neural Networks
+
+Dataset: 
+    http://www.cs.cmu.edu/~ark/CLIP/code+data.html
+    Stage 2, Steps 1
+
+Project Idea:
+    
+
+Software:
+    python, scikit learn
+
+teammates and division of work
+    NLP- portion: Anastassia
+    Coding stuff: Ian
+    Optimization procedures: Michael
+
+Midterm milestone:
+    have an RNN written
+    have a few (more naive) supervised methods
+    have an understanding of optimal procedures for RNN
+
+Beyond the midterm:
+    - generative approach to how the ideological makeup of speech has changed over
+    time
+    
+    - how a candidate's speech patterns changes *Explore the data set suggested*
+

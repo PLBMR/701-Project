@@ -1,3 +1,9 @@
 Meeting Notes
 3/20/2016 4:24 PM
--
+-Idea: Compare Performance of RNN with LSTM Model
+    --Language Representation: Word Embeddings
+        ---playing with word2vec, doc2vec
+    --Gameplan:
+        ---Anastassia Will work on sentence and document-level vectorization
+        ---Ian and I will replicate results of paper
+    

@@ -56,8 +56,8 @@ class neuralNet(Struct):
         def crossEntropy(outputY, targetY):
             # both the above come in as a list of lists
             assert(np.shape(outputY) == np.shape(targetY))
-            np.sum(targetY * np.log(outputY))
-        self.lossFunction = calculate_loss
+            return (-1 * np.sum(targetY * np.log(outputY)))
+        self.lossFunction = crossEntropy
 
 
 # forward propagation

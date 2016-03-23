@@ -36,6 +36,9 @@ class neuralNet(Struct):
     def forwardProp(self, sentenceVec):
         # given a sentence vector of sentenceDim dimensions, output our
         # softmax layer
+        if (self.softMaxInitialized == False):
+            #shoud initialize this
+            self.initializedWeights()
         inputVec = np.dot(self.softmaxWeightMat, sentenceVec)
         givenSoftMaxVec = softMaxFunc(inputVec)
         return givenSoftMaxVec
@@ -44,14 +47,8 @@ class neuralNet(Struct):
         self.softMaxInitialized = True
         self.softmaxWeightMat = np.ones(np.shape(self.softmaxWeightMat))
 
-    def predict(self, sentenceVec):
-        # produces a prediction for a given sentence vector
-        probabilityVec = self.forwardProp(sentenceVec)
-        # find the index with maximum probability
-        maxProbLabel = np.argmax(probabilityVec)
-        return maxProbLabel
-
     def setLossFunction(self, toSet):
+        #function
         self.lossFunctionInitialized = True
         self.lossFunction = toSet
 

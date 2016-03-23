@@ -57,6 +57,9 @@ class neuralNet(Struct):
             
         self.lossFunction = calculate_loss
 
+    def train(self,numIterations,listOfPredictions,listOfLabels,
+              listOfPredictors):
+        #helps train our 
 
 #forward propagation
 

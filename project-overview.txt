@@ -1,0 +1,15 @@
+A data set with lots of American president speeches is available here. There are
+lots of interesting projects related to this data set. Some examples are shown
+here:
+Make a simple classifier to classify a speech as republican versus democrat.
+Make a classifier for determining the president who gave the speech.
+Model different topics that the speeches "talk" about over time. Interesting
+relevant work can be found here.
+Make a generator of speeches for republican/democrat presidents, or even for a
+specific president. One potential idea for doing this is by using recurrent
+neural networks, such as LSTMs.
+Mentors: Anthony Platanios (eplatani@cs.cmu.edu), and Abhinav Arora
+(aa1@andrew.cmu.edu) 
+
+References:
+David Blei et al., Dynamic Topic Models. Available here.

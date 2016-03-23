@@ -5,6 +5,8 @@
 
 import cPickle
 import theano
+import numpy as np
+from structClass import Struct
 
 #load in dataset
 
@@ -15,8 +17,27 @@ def datasetLoadIn(datasetFilename):
     [liberalSent,conservSent,neutralSent] = cPickle.load(datasetFile)
     return [liberalSent,conservSent,neutralSent]
 
-class neuralNet(
 #activation functions
+
+def softMaxFunc(vec):
+    #given a numpy matrix
+
+#neural network class
+
+class neuralNet(Struct):
+    def _init_(self,sentenceDim,numLabels):
+        self.softmaxWeightMat = np.zeros((numLabels,sentenceDim))
+        self.softMaxInitialized = False
+        self.lossFunctionInitialized = False
+
+    def forwardProp(self,sentenceVec):
+        #given a sentence vector of sentenceDim dimensions, output our
+        #softmax layer
+            
+                
+
+    def prediction(self):
+
 
 #forward propagation
 

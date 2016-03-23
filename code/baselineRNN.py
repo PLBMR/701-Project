@@ -56,12 +56,14 @@ class neuralNet(Struct):
         self.lossFunction = toSet
 
     def defaultLossFunction(self):
-        def calculate_loss(outputY, targetY):
-            
+        def crossEntropy(outputY, targetY):
+            # both the above come in as a list of lists
+            assert(np.shape(outputY) == np.shape(targetY))
+            np.sum(targetY * np.log(outputY))
         self.lossFunction = calculate_loss
 
 
-#forward propagation
+# forward propagation
 
     # default loss function
 

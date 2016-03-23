@@ -15,15 +15,10 @@ def datasetLoadIn(datasetFilename):
     [liberalSent,conservSent,neutralSent] = cPickle.load(datasetFile)
     return [liberalSent,conservSent,neutralSent]
 
+class neuralNet(
 #activation functions
 
 #forward propagation
-
-def forwardPropagation(sentParseTree,wordEmbedMat,phraseLeftMat,phraseRightMat,
-                       softMaxMat):
-    #takes a given sentence (represented as a parse tree) and propagates it
-    #through our neural network to give us our softmax probability vector
-
 
 #generate RNN with dataset
 

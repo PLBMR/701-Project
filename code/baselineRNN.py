@@ -4,7 +4,6 @@
 #imports
 
 import cPickle
-import theano
 import numpy as np
 from structClass import Struct
 
@@ -20,12 +19,14 @@ def datasetLoadIn(datasetFilename):
 #activation functions
 
 def softMaxFunc(vec):
-    #given a numpy matrix
+    #given a numpy matrix, calculate the softmax of that matrix
+    softMaxVec = np.exp(vec) / np.sum(np.exp(vec))
+    return softMaxVec
 
 #neural network class
 
 class neuralNet(Struct):
-    def _init_(self,sentenceDim,numLabels):
+    def __init__(self,numLabels,sentenceDim):
         self.softmaxWeightMat = np.zeros((numLabels,sentenceDim))
         self.softMaxInitialized = False
         self.lossFunctionInitialized = False
@@ -33,10 +34,16 @@ class neuralNet(Struct):
     def forwardProp(self,sentenceVec):
         #given a sentence vector of sentenceDim dimensions, output our
         #softmax layer
-            
-                
+        inputVec = np.dot(self.softmaxWeightMat,sentenceVec)
+        givenSoftMaxVec = softMaxFunc(inputVec)
+        return givenSoftMaxVec
 
-    def prediction(self):
+    def predict(self,sentenceVec):
+        #produces a prediction for a given sentence vector
+        probabilityVec = self.forwardProp(sentenceVec)
+        #find the index with maximum probability
+        maxProbLabel = np.argmax(probabilityVec)
+        return maxProbLabel
 
 
 #forward propagation
@@ -45,4 +52,5 @@ class neuralNet(Struct):
 
 #testing
 
-print datasetLoadIn("../data/full_ibc/ibcData.pkl")[0][0].get_words()
+idea = neuralNet(2,3)
+print idea.predict(np.matrix([[1],[2],[3]]))

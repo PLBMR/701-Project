@@ -30,7 +30,6 @@ class neuralNet(Struct):
     def __init__(self, numLabels, sentenceDim):
         self.softmaxWeightMat = np.zeros((numLabels, sentenceDim))
         self.softMaxInitialized = False
-        self.lossFunctionInitialized = False
         self.lossFunction = None
 
     def forwardProp(self, sentenceVec):
@@ -39,6 +38,8 @@ class neuralNet(Struct):
         if (self.softMaxInitialized == False):
             #shoud initialize this
             self.initializedWeights()
+        if (self.lossFunction == None):
+            self.lossFunction = defaultLossFunction()
         inputVec = np.dot(self.softmaxWeightMat, sentenceVec)
         givenSoftMaxVec = softMaxFunc(inputVec)
         return givenSoftMaxVec

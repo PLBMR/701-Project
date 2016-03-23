@@ -6,7 +6,7 @@
 import cPickle
 import numpy as np
 from structClass import Struct
-
+import random #for SGD
 
 def datasetLoadIn(datasetFilename):
     # helper designed to load in our initial dataset
@@ -53,19 +53,42 @@ class neuralNet(Struct):
         self.lossFunction = toSet
 
     def defaultLossFunction(self):
-        def calculate_loss(outputY, targetY):
-            
+        def crossEntropy(outputY, targetY):
+            # both the above come in as a list of lists
+            assert(np.shape(outputY) == np.shape(targetY))
+            np.sum(targetY * np.log(outputY))
         self.lossFunction = calculate_loss
 
-    def train(self,numIterations,listOfPredictions,listOfLabels,
-              listOfPredictors):
-        #helps train our 
+    def train(self,numIterations,listOfLabels,
+              listOfPredictors,learningRate):
+        #helps train our weight matrix using SGD
+        if (self.softMaxInitialized == False):
+            #initialize it
+            self.initializedWeights()
+        predictorIndexList = range(len(listOfPredictors))
+        random.shuffle(predictorIndexList)
+        #run SGD based on cross entropy function
+        for i in xrange(numIterations):
+            #get predictor ind
+            givenPredictorInd = predictorIndexList[i % len(predictorIndexList)]
+            predictorVec = listOfPredictors[givenPredictorInd]
+            predictionVec = forwardProp(predictorVec)
+            #get gradient of weights
+            correctLabel = listOfLabels[givenPredictorInd]
+            weightMatGradient = ((predictionVec - listOfLabels[correctLabel])
+                                    * predictorVec.transpose())
+            #then update weights
+            self.softmaxWeightMat -= learningRate * weightMatGradient
 
-#forward propagation
+# forward propagation
 
     # default loss function
 
 # testing
 
+firstVec = np.matrix([[1],[2],[6]])
+secondVec = np.matrix([[4],[3],[2]])
+thirdVec = np.matrix([[8],[7],[4]])
+listOfPred = [firstVec,secondVec
 idea = neuralNet(2,3)
 print idea.predict(np.matrix([[1],[2],[3]]))

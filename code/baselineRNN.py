@@ -16,45 +16,49 @@ def datasetLoadIn(datasetFilename):
     return [liberalSent, conservSent, neutralSent]
 
 
-class neuralNet(Struct):
-
-
-    # activation functions
-
-    # forward propagation
-
-    # generate RNN with dataset
-
-    # initializeSoftMax layer
-
-#activation functions
+# activation functions
 
 def softMaxFunc(vec):
-    #given a numpy matrix, calculate the softmax of that matrix
+    # given a numpy matrix, calculate the softmax of that matrix
     softMaxVec = np.exp(vec) / np.sum(np.exp(vec))
     return softMaxVec
 
-#neural network class
+# neural network class
+
 
 class neuralNet(Struct):
-    def __init__(self,numLabels,sentenceDim):
-        self.softmaxWeightMat = np.zeros((numLabels,sentenceDim))
+    def __init__(self, numLabels, sentenceDim):
+        self.softmaxWeightMat = np.zeros((numLabels, sentenceDim))
         self.softMaxInitialized = False
         self.lossFunctionInitialized = False
+        self.lossFunction = None
 
-    def forwardProp(self,sentenceVec):
-        #given a sentence vector of sentenceDim dimensions, output our
-        #softmax layer
-        inputVec = np.dot(self.softmaxWeightMat,sentenceVec)
+    def forwardProp(self, sentenceVec):
+        # given a sentence vector of sentenceDim dimensions, output our
+        # softmax layer
+        inputVec = np.dot(self.softmaxWeightMat, sentenceVec)
         givenSoftMaxVec = softMaxFunc(inputVec)
         return givenSoftMaxVec
 
-    def predict(self,sentenceVec):
-        #produces a prediction for a given sentence vector
+    def initializedWeights(self):
+        self.softMaxInitialized = True
+        self.softmaxWeightMat = np.ones(np.shape(self.softmaxWeightMat))
+
+    def predict(self, sentenceVec):
+        # produces a prediction for a given sentence vector
         probabilityVec = self.forwardProp(sentenceVec)
-        #find the index with maximum probability
+        # find the index with maximum probability
         maxProbLabel = np.argmax(probabilityVec)
         return maxProbLabel
+
+    def setLossFunction(self, toSet):
+        self.lossFunctionInitialized = True
+        self.lossFunction = toSet
+
+    def defaultLossFunction(self):
+        def calculate_loss(outputY, targetY):
+            
+        self.lossFunction = calculate_loss
 
 
 #forward propagation

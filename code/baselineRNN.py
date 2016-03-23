@@ -59,8 +59,7 @@ class neuralNet(Struct):
             np.sum(targetY * np.log(outputY))
         self.lossFunction = calculate_loss
 
-    def train(self,numIterations,listOfLabels,
-              listOfPredictors,learningRate):
+    def train(self,numIterations,listOfLabels,listOfPredictors,learningRate):
         #helps train our weight matrix using SGD
         if (self.softMaxInitialized == False):
             #initialize it
@@ -72,10 +71,11 @@ class neuralNet(Struct):
             #get predictor ind
             givenPredictorInd = predictorIndexList[i % len(predictorIndexList)]
             predictorVec = listOfPredictors[givenPredictorInd]
-            predictionVec = forwardProp(predictorVec)
+            predictionVec = self.forwardProp(predictorVec)
             #get gradient of weights
             correctLabel = listOfLabels[givenPredictorInd]
-            weightMatGradient = ((predictionVec - listOfLabels[correctLabel])
+
+            weightMatGradient = ((predictionVec - correctLabel)
                                     * predictorVec.transpose())
             #then update weights
             self.softmaxWeightMat -= learningRate * weightMatGradient
@@ -86,9 +86,50 @@ class neuralNet(Struct):
 
 # testing
 
-firstVec = np.matrix([[1],[2],[6]])
-secondVec = np.matrix([[4],[3],[2]])
-thirdVec = np.matrix([[8],[7],[4]])
-listOfPred = [firstVec,secondVec
-idea = neuralNet(2,3)
-print idea.predict(np.matrix([[1],[2],[3]]))
+def generateRandomVector(dimension):
+    #helper to generate random vector
+    randomVec = []
+    for i in xrange(dimension):
+        randomComp = [random.uniform(0,1)]
+        randomVec.append(randomComp)
+    randomVec = np.matrix(randomVec)
+    return randomVec
+
+def generateRandomLabel(numLabels):
+    #helper to generate random labels
+    #generate our random labels
+    randomLabelList = []
+    for i in xrange(numLabels):
+        newLabelVec = []
+        for j in xrange(numLabels):
+            if (j == i):
+                newLabelVec.append([1])
+            else:
+                newLabelVec.append([0])
+        newLabelVec = np.matrix(newLabelVec)
+        randomLabelList.append(newLabelVec)
+    randomLabel = random.sample(randomLabelList,1)[0]
+    return randomLabel
+
+def testProcedure(numVectors,numIterations,learningRate):
+    #tests out our training algorithm
+    numLabels = 3
+    vectorDim = 4
+    practiceNN = neuralNet(numLabels,vectorDim)
+    practiceNN.initializedWeights()
+    print practiceNN.softmaxWeightMat
+    #get our predictors and our labels
+    listOfPredictors = []
+    listOfLabels = []
+    for i in xrange(numVectors):
+        #generate new predictor
+        listOfPredictors.append(generateRandomVector(vectorDim))
+        listOfLabels.append(generateRandomLabel(numLabels))
+    #see pre-train performance
+    for i in xrange(numVectors)
+    #then perform training algorithm
+    practiceNN.train(numIterations,listOfLabels,listOfPredictors,learningRate)
+    print practiceNN.softmaxWeightMat
+
+
+testProcedure(30,2000,5)

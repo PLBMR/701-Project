@@ -4,6 +4,7 @@
 #imports
 
 import cPickle
+import theano
 
 #load in dataset
 
@@ -14,12 +15,18 @@ def datasetLoadIn(datasetFilename):
     [liberalSent,conservSent,neutralSent] = cPickle.load(datasetFile)
     return [liberalSent,conservSent,neutralSent]
 
+#activation functions
+
 #forward propagation
 
-#SGD
+def forwardPropagation(sentParseTree,wordEmbedMat,phraseLeftMat,phraseRightMat,
+                       softMaxMat):
+    #takes a given sentence (represented as a parse tree) and propagates it
+    #through our neural network to give us our softmax probability vector
 
-#general RNN with dataset
+
+#generate RNN with dataset
 
 #testing
 
-print datasetLoadIn("../data/full_ibc/ibcData.pkl")[0][0]
+print datasetLoadIn("../data/full_ibc/ibcData.pkl")[0][0].get_words()

@@ -3,9 +3,9 @@
 ## Dependencies
 ###Library Dependencies:
  Python libraries:
-	 - gensim
-	 - numpy
-	 - sklearn
+* gensim
+* numpy
+* sklearn
 
 ###Data dependecies:
 	Download and place/un-zip in data subdirectory

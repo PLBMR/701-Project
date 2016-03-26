@@ -108,7 +108,7 @@ def runIBC():
 
     print "Begin IBC testing"
     
-    [demInput, repInput, neutral] = cPickle.load(open('../data/ibcData.pkl', 'rb'))
+    [demInput, repInput, neutral] = cPickle.load(open('../data/full_ibc/ibcData.pkl', 'rb'))
     
     print "Test BOW features on full sentences"
 
@@ -165,4 +165,6 @@ def runIBC():
 if __name__ == '__main__':
 
     runIBC()
+
+    [demInput, repInput, neutral] = cPickle.load(open('../data/full_ibc/ibcData.pkl', 'rb'))
 

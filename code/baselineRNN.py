@@ -23,12 +23,22 @@ def softMaxFunc(vec):
     softMaxVec = np.exp(vec) / np.sum(np.exp(vec))
     return softMaxVec
 
+def languageActivFunc(vec):
+    #given a language vector, calculate the activation function of the langauge
+    #vector
+    return np.tanh(vec)
+
 # neural network class
 
 
 class neuralNet(Struct):
-    def __init__(self, numLabels, sentenceDim):
+    def __init__(self, numLabels, sentenceDim, vocabSize):
+        #for the softmax layer
         self.softmaxWeightMat = np.zeros((numLabels, sentenceDim))
+        #for the basic language layer
+        self.languageWeightMat = np.zeros((sentenceDim,sentenceDim))
+        #have our word embedding matrix
+        self.wordEmbedingMat = np.zeros((sentenceDim,vocabSize))
         self.softMaxInitialized = False
         self.lossFunction = None
 
@@ -86,10 +96,10 @@ class neuralNet(Struct):
             #get gradient of weights
             correctLabel = listOfLabels[givenPredictorInd]
 
-            weightMatGradient = ((predictionVec - correctLabel)
+            softmaxMatGradient = ((predictionVec - correctLabel)
                                     * predictorVec.transpose())
             #then update weights
-            self.softmaxWeightMat -= learningRate * weightMatGradient
+            self.softmaxWeightMat -= learningRate * softmaxMatGradient
 
     def getAccuracy(self,correctLabelList,predictorList):
         #helper to get accuracy on a given set of data

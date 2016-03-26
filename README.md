@@ -1,6 +1,11 @@
 # 701-Project
 
+
 ## Dependencies
+
+### Installation instructions
+Add 'PATH/TO/701-Project:/PATH/TO/701-Project/util' to PYTHONPATH
+
 ###Library Dependencies:
  Python libraries:
 * gensim

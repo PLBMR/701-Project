@@ -166,5 +166,6 @@ if __name__ == '__main__':
 
     runIBC()
 
-    [demInput, repInput, neutral] = cPickle.load(open('../data/full_ibc/ibcData.pkl', 'rb'))
+    [demInput, repInput, neutral] = cPickle.load(open(
+                                        '../data/full_ibc/ibcData.pkl', 'rb'))
 

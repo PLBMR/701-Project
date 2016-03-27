@@ -32,7 +32,8 @@ def languageActivFunc(vec):
 
 
 class neuralNet(Struct):
-    def __init__(self, numLabels, sentenceDim, vocabSize, vocabDict):
+    def __init__(self, numLabels, sentenceDim, vocabSize, vocabDict,
+                trainingSet):
         #for the softmax layer
         self.softmaxWeightMat = np.zeros((numLabels, sentenceDim))
         #for the basic language layer
@@ -40,28 +41,50 @@ class neuralNet(Struct):
         #have our word embedding matrix
         self.wordEmbedingMat = np.zeros((sentenceDim,vocabSize))
         self.vocabDict = vocabDict #to keep track of our vocabulary
+        self.trainingSet = trainingSet #for training our data
+        self.labelDict = self.setLabels(trainingSet)
         self.weightsInitialized = False
         self.lossFunction = None
     
-    def vectorizeSentenceTree(sentenceTree):
+    def setLabels(self,trainingSet):
+        #given a list of parse trees, create a label vector and assign to
+        #each parse tree
+        #first, get set of labels from training set
+        labelDict = {}
+        for i in xrange(len(trainingSet)):
+            if (trainingSet[i].label not in labelDict):
+                #add it in
+                labelDict[trainingSet[i].label] = len(labelDict)
+        #then get numpy to develop an identity matrix for this
+        labelMatrix = np.identity(len(labelDict))
+        #then attach label vectors to each parse tree
+        for i in xrange(len(trainingSet)):
+            #get column reference
+            labelVecCol = labelDict[trainingSet[i].label]
+            givenLabelVec = labelMatrix[:,labelVecCol]
+            #then transpose to assign as column vector
+            trainingSet[i].labelVec = np.array([givenLabelVec]).T
+        return labelDict
+
+    def vectorizeSentenceTree(self,sentenceTree):
         #given a parse tree, vectorize the parse tree
         if (isinstance(sentenceTree,treeUtil.leafObj)): #is a word,
             #look up in our word embeding matrix
-            wordIndex = vocabDict[sentenceTree.alpha]
+            wordIndex = self.vocabDict[sentenceTree.word]
             wordVec = self.wordEmbedingMat[:,wordIndex]
             #then adjust it for column usage
             wordColumnVec = np.array([wordVec]).T #for transpose
-            sentenceTree.set_label(wordColumnVec) #for reference
+            sentenceTree.vec = wordColumnVec #for reference
             return wordColumnVec
         else: #we have a recursively defined object
-            leftChildVec = vectorizeSentenceTree(sentenceTree.c1).label
-            rightChildVec = vectorizeSentenceTree(sentenceTree.c2).label
+            leftChildVec = self.vectorizeSentenceTree(sentenceTree.c1)
+            rightChildVec = self.vectorizeSentenceTree(sentenceTree.c2)
             #calculate sentenceVec
             sentenceVec = languageActivFunc(
                     np.dot(self.languageWeightMat,leftChildVec)
                     + np.dot(self.languageWeightMat,rightChildVec))
             #assign it and then return
-            sentenceTree.set_label(sentenceVec)
+            sentenceTree.vec = sentenceVec
             return sentenceVec
 
     def forwardProp(self, sentenceTree):
@@ -71,7 +94,7 @@ class neuralNet(Struct):
             #shoud initialize this
             self.initializedWeights()
         if (self.lossFunction == None):
-            self.lossFunction = self.defaultLossFunctiona()
+            self.lossFunction = self.defaultLossFunction()
         #first vectorize sentence
         sentenceVec = self.vectorizeSentenceTree(sentenceTree)
         #then move the sentence through the softmax layer
@@ -111,9 +134,9 @@ class neuralNet(Struct):
             return (-1 * np.sum(targetY * np.log(outputY)))
         self.lossFunction = crossEntropy
 
-    def train(self,numIterations,listOfLabels,listOfPredictors,learningRate):
+    def train(self,numIterations,learningRate):
         #helps train our weight matrix using SGD
-        if (self.softMaxInitialized == False):
+        if (self.weightsInitialized == False):
             #initialize it
             self.initializedWeights()
         predictorIndexList = range(len(listOfPredictors))
@@ -128,6 +151,9 @@ class neuralNet(Struct):
 
             softmaxMatGradient = ((predictionVec - correctLabel)
                                     * predictorVec.transpose())
+            languageWeightGradient = np.dot(
+                np.dot((predictionVec - correctLabel).T,self.softmaxWeightMat),
+                1)
             #then update weights
             self.softmaxWeightMat -= learningRate * softmaxMatGradient
 
@@ -175,5 +201,21 @@ def generateLabel(numLabels,predVec):
 
 #test processses
 
-def testForwardPropagation(numLabels,sentenceDim,vocabFilename,datasetFilename)
+def testForwardPropagation(numLabels,sentenceDim,vocabFilename,datasetFilename):
+    #tests out the forward propagation developed for our basic RNN
+    #load vocabulary
+    vocabDict = cPickle.load(open(vocabFilename,"rb"))
+    #load dataset
+    parseTreeList = cPickle.load(open(datasetFilename,"rb"))
+    #then forward propagate through the neural network
+    practiceNeuralNet = neuralNet(numLabels,sentenceDim,len(vocabDict),
+                                    vocabDict,parseTreeList)
+    print parseTreeList[0].get_words()
+    print practiceNeuralNet.forwardProp(parseTreeList[0])
+    print parseTreeList[0].vec
+    print parseTreeList[100].get_words()
+    print practiceNeuralNet.forwardProp(parseTreeList[100])
+
+testForwardPropagation(3,6,"../data/ibcVocabulary.pkl",
+                           "../data/alteredIBCData.pkl")
     

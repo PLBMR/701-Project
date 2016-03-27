@@ -7,7 +7,7 @@ import cPickle
 import numpy as np
 from structClass import Struct
 import random #for SGD
-
+import treeUtil
 def datasetLoadIn(datasetFilename):
     # helper designed to load in our initial dataset
     datasetFile = open(datasetFilename, "rb")
@@ -32,24 +32,49 @@ def languageActivFunc(vec):
 
 
 class neuralNet(Struct):
-    def __init__(self, numLabels, sentenceDim, vocabSize):
+    def __init__(self, numLabels, sentenceDim, vocabSize, vocabDict):
         #for the softmax layer
         self.softmaxWeightMat = np.zeros((numLabels, sentenceDim))
         #for the basic language layer
         self.languageWeightMat = np.zeros((sentenceDim,sentenceDim))
         #have our word embedding matrix
         self.wordEmbedingMat = np.zeros((sentenceDim,vocabSize))
-        self.softMaxInitialized = False
+        self.vocabDict = vocabDict #to keep track of our vocabulary
+        self.weightsInitialized = False
         self.lossFunction = None
+    
+    def vectorizeSentenceTree(sentenceTree):
+        #given a parse tree, vectorize the parse tree
+        if (isinstance(sentenceTree,treeUtil.leafObj)): #is a word,
+            #look up in our word embeding matrix
+            wordIndex = vocabDict[sentenceTree.alpha]
+            wordVec = self.wordEmbedingMat[:,wordIndex]
+            #then adjust it for column usage
+            wordColumnVec = np.array([wordVec]).T #for transpose
+            sentenceTree.set_label(wordColumnVec) #for reference
+            return wordColumnVec
+        else: #we have a recursively defined object
+            leftChildVec = vectorizeSentenceTree(sentenceTree.c1).label
+            rightChildVec = vectorizeSentenceTree(sentenceTree.c2).label
+            #calculate sentenceVec
+            sentenceVec = languageActivFunc(
+                    np.dot(self.languageWeightMat,leftChildVec)
+                    + np.dot(self.languageWeightMat,rightChildVec))
+            #assign it and then return
+            sentenceTree.set_label(sentenceVec)
+            return sentenceVec
 
-    def forwardProp(self, sentenceVec):
+    def forwardProp(self, sentenceTree):
         # given a sentence vector of sentenceDim dimensions, output our
         # softmax layer
-        if (self.softMaxInitialized == False):
+        if (self.weightsInitialized == False):
             #shoud initialize this
             self.initializedWeights()
         if (self.lossFunction == None):
-            self.lossFunction = self.defaultLossFunction()
+            self.lossFunction = self.defaultLossFunctiona()
+        #first vectorize sentence
+        sentenceVec = self.vectorizeSentenceTree(sentenceTree)
+        #then move the sentence through the softmax layer
         inputVec = np.dot(self.softmaxWeightMat, sentenceVec)
         givenSoftMaxVec = softMaxFunc(inputVec)
         return givenSoftMaxVec
@@ -65,9 +90,14 @@ class neuralNet(Struct):
         return oneHotPredVec
 
     def initializedWeights(self):
-        self.softMaxInitialized = True
+        #helper for initializing our weights
+        self.weightsInitialized = True
         self.softmaxWeightMat= np.random.rand(self.softmaxWeightMat.shape[0],
                                              self.softmaxWeightMat.shape[1])
+        self.languageWeightMat = np.random.rand(self.languageWeightMat.shape[0],
+                                             self.languageWeightMat.shape[1])
+        self.wordEmbedingMat = np.random.rand(self.wordEmbedingMat.shape[0],
+                                             self.wordEmbedingMat.shape[1])
 
     def setLossFunction(self, toSet):
         #function
@@ -143,26 +173,7 @@ def generateLabel(numLabels,predVec):
     else:
         return randomLabelList[1]
 
-def testProcedure(numVectors,numIterations,learningRate):
-    #tests out our training algorithm
-    numLabels = 2
-    vectorDim = 3
-    practiceNN = neuralNet(numLabels,vectorDim)
-    practiceNN.initializedWeights()
-    print practiceNN.softmaxWeightMat
-    #get our predictors and our labels
-    listOfPredictors = []
-    listOfLabels = []
-    for i in xrange(numVectors):
-        #generate new predictor
-        givenRandomVec = generateRandomVector(vectorDim)
-        listOfPredictors.append(givenRandomVec)
-        listOfLabels.append(generateLabel(numLabels,givenRandomVec))
-    #see pre-train performance
-    print practiceNN.getAccuracy(listOfLabels,listOfPredictors)
-    #then perform training algorithm
-    practiceNN.train(numIterations,listOfLabels,listOfPredictors,learningRate)
-    print practiceNN.softmaxWeightMat
-    print practiceNN.getAccuracy(listOfLabels,listOfPredictors)
+#test processses
 
-testProcedure(2000,100000,1)
+def testForwardPropagation(numLabels,sentenceDim,vocabFilename,datasetFilename)
+    

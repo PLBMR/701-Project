@@ -173,8 +173,8 @@ class neuralNet(Struct):
         for leaf in givenSentenceTree.get_leaves():
             columnNumList.append(leaf.alpha) #contains column reference number
         columnNumList = list(set(columnNumList)) #to get unique
-        wordEmbedingGradMatrix = np.zeros((self.sentenceDim,
-                                            len(self.vocabDict)))
+        wordEmbedingGradMatrix = np.random.rand(self.sentenceDim,
+                                            len(self.vocabDict))
         #test purposes
         for columnNum in columnNumList:
             #find gradient for this column
@@ -252,7 +252,7 @@ class neuralNet(Struct):
         listOfChainRulePaths = self.getLanguageChainRulePaths(givenSentenceTree)
         #then for each path, generate the language weight gradient based on that
         #path
-        languageLayerDeriv = np.matrix((self.sentenceDim,1))
+        languageLayerDeriv = np.zeros((self.sentenceDim,1))
         for langGradientPath in listOfChainRulePaths:
             languageLayerDeriv += self.languageDerivRecursion(langGradientPath)
         languageWeightGradient = np.dot(softmaxLayerDeriv.T,
@@ -273,12 +273,12 @@ class neuralNet(Struct):
                                     * givenSentenceTree.langVec.transpose())
             languageWeightGradient = self.buildLanguageWeightGradient(
                             predictionVec,correctLabel,givenSentenceTree)
-            #wordEmbedingGradient = self.buildWordEmbedingGradient(
-            #        givenSentenceTree,predictionVec,correctLabel)
+            wordEmbedingGradient = self.buildWordEmbedingGradient(
+                    givenSentenceTree,predictionVec,correctLabel)
             #then update weights
             self.softmaxWeightMat -= learningRate * softmaxMatGradient
             self.languageWeightMat -= learningRate * languageWeightGradient
-            #self.wordEmbedingMat -= learningRate * wordEmbedingGradient
+            self.wordEmbedingMat -= learningRate * wordEmbedingGradient
             print self.getAccuracy(self.trainingSet)
     
     def trainManually(self,numIterations,learningRate):
@@ -374,7 +374,7 @@ def testForwardPropagation(numLabels,sentenceDim,vocabFilename,datasetFilename):
     practiceNeuralNet = neuralNet(numLabels,sentenceDim,len(vocabDict),
                                     vocabDict,parseTreeList)
     print practiceNeuralNet.getAccuracy(practiceNeuralNet.trainingSet)
-    practiceNeuralNet.train(3,30,True)
+    practiceNeuralNet.train(80,1,True)
 
 
 testForwardPropagation(3,6,"../data/ibcVocabulary.pkl",

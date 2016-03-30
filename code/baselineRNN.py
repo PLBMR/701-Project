@@ -8,6 +8,7 @@ import numpy as np
 from structClass import Struct
 import random #for SGD
 import treeUtil
+import copy #for help with keeping track of chain rule paths
 
 def datasetLoadIn(datasetFilename):
     # helper designed to load in our initial dataset
@@ -29,7 +30,7 @@ def languageActivFunc(vec):
     #vector
     return np.tanh(vec)
 
-def derivLangaugeActivFunc(vec):
+def derivLanguageActivFunc(vec):
     #given a language vector, calculate the derivative function of the
     #laguage vector
     return (float(1) / np.cosh(vec)) ** 2
@@ -141,26 +142,7 @@ class neuralNet(Struct):
             return (-1 * np.sum(targetY * np.log(outputY)))
         self.lossFunction = crossEntropy
     
-    def languageDerivRecursion(self,givenSentenceTree):
-        #helps recurse through a given sentence tree for our language matrix
-        if (isinstance(givenSentenceTree,treeUtil.leafObj)):
-            #is not dependent on our language matrix, return 0
-            return np.zeros((self.sentenceDim,1))
-        else:
-            #then got dependent on my language matrix and language activation
-            #function
-            derivActivationVec = derivLangaugeActivFunc(
-                np.dot(self.languageWeightMat,givenSentenceTree.c1.langVec)
-                + np.dot(self.languageWeightMat,givenSentenceTree.c2.langVec))
-            #then multiply by chain rule vector
-            chainRuleVec = (
-                givenSentenceTree.c1.langVec + givenSentenceTree.c2.langVec
-                + np.dot(self.languageWeightMat,
-                    self.languageDerivRecursion(givenSentenceTree.c1)
-                    + self.languageDerivRecursion(givenSentenceTree.c2)))
-            #then return their element-wise multiplication
-            return derivActivationVec * chainRuleVec
-    
+        
     def findColGrad(self,givenSentenceTree,wordNum):
         #find the column gradient at column wordNum in the sentence tree
         if (isinstance(givenSentenceTree,treeUtil.leafObj)):
@@ -171,7 +153,7 @@ class neuralNet(Struct):
                 return np.zeros((self.sentenceDim,1))
         else:
             #take gradient for a sentence
-            outerLayerDeriv = derivLangaugeActivFunc(
+            outerLayerDeriv = derivLanguageActivFunc(
                             np.dot(self.languageWeightMat,
                                 givenSentenceTree.c1.langVec
                                 + givenSentenceTree.c2.langVec))
@@ -200,6 +182,84 @@ class neuralNet(Struct):
                     givenSentenceTree,columnNum).T
         #then return structure
         return softmaxLayerDeriv * wordEmbedingGradMatrix
+    
+    #functions designed to find the language gradient
+    
+    def languageDerivRecursion(self,langGradientPath):
+        #given a language gradient path (a list of nodeObj objects), create the 
+        #language-level gradient with respect to this path
+        assert(len(langGradientPath) >= 1)
+        if (len(langGradientPath) == 1): #just need to take the derivative
+            #with respect to the matrix
+            givenPhrase = langGradientPath[0]
+            functionInputVector = np.dot(self.languageWeightMat,
+                                givenPhrase.c1.langVec + givenPhrase.c2.langVec)
+            #take derivative at function level
+            derivActivFuncOutput = derivLanguageActivFunc(functionInputVector)
+            #by chain, take derivative wrt functionInputVector
+            derivFunctionInputVector = (givenPhrase.c1.langVec 
+                                            + givenPhrase.c2.langVec)
+            return derivActivFuncOutput * derivFunctionInputVector
+        else: #must take with respect to subsequent path
+            givenPhrase = langGradientPath[0]
+            functionInputVector = np.dot(self.languageWeightMat,
+                                givenPhrase.c1.langVec + givenPhrase.c2.langVec)
+            derivActivFuncOutput = derivLanguageActivFunc(functionInputVector)
+            #take derivative wrt next phrase in the path
+            currentPathOutputDeriv = (
+                np.dot(derivActivFuncOutput.T,self.languageWeightMat)).T
+            return currentPathOutputDeriv * self.languageDerivRecursion(
+                    langGradientPath[1:])
+
+
+    def getLanguageChainRulePaths(self,sentenceTree):
+        #given a sentence tree, get a list of the gradient chain rule paths
+        #to consider
+        listOfChainRulePaths = []
+        givenPath = [] #this is designed to keep track of our paths
+        #to append to our list
+        def getLanguageChainRulePathsWrapper(sentenceTree,listOfChainRulePaths,
+                                            givenPath):
+            #main function for finding a path dependent on
+            if (not(isinstance(sentenceTree,treeUtil.leafObj))):
+                #means that it is dependent on the language matrix
+                givenPath.append(sentenceTree)
+                listOfChainRulePaths.append(givenPath)
+                #check if its left and right sides are dependent on the language
+                #matrix
+                if (not(isinstance(sentenceTree.c1,treeUtil.leafObj))):
+                    leftGivenPath = copy.deepcopy(givenPath)
+                    getLanguageChainRulePathsWrapper(sentenceTree.c1,
+                            listOfChainRulePaths,leftGivenPath)
+                if (not(isinstance(sentenceTree.c2,treeUtil.leafObj))):
+                    rightGivenPath = copy.deepcopy(givenPath)
+                    getLanguageChainRulePathsWrapper(sentenceTree.c2,
+                            listOfChainRulePaths,rightGivenPath)
+        #perform the wrapper
+        getLanguageChainRulePathsWrapper(sentenceTree,listOfChainRulePaths,
+                                        givenPath)
+        return listOfChainRulePaths
+
+    def buildLanguageWeightGradient(self,predictedLabel,correctLabel,
+            givenSentenceTree):
+        #main parent function that generates the gradient for the language
+        #matrix given a sentence tree
+        #first, account for the derivative at the softmax layer
+        softmaxLayerDeriv = np.dot((predictedLabel - correctLabel).T,
+                                    self.softmaxWeightMat)
+        #then, generate the sentence level derivative by performing gradient
+        #chain rule to all paths to the language level matrix
+        listOfChainRulePaths = self.getLanguageChainRulePaths(givenSentenceTree)
+        #then for each path, generate the language weight gradient based on that
+        #path
+        languageLayerDeriv = np.matrix((self.sentenceDim,1))
+        for langGradientPath in listOfChainRulePaths:
+            languageLayerDeriv += self.languageDerivRecursion(langGradientPath)
+        languageWeightGradient = np.dot(softmaxLayerDeriv.T,
+                                        languageLayerDeriv.T)
+        return languageWeightGradient
+
+    #main training algorithms
 
     def trainStochastically(self,numIterations,learningRate):
         #run SGD based on cross entropy function
@@ -211,16 +271,15 @@ class neuralNet(Struct):
             correctLabel = givenSentenceTree.labelVec
             softmaxMatGradient = ((predictionVec - correctLabel)
                                     * givenSentenceTree.langVec.transpose())
-            languageWeightGradient = np.dot(
-            np.dot((predictionVec - correctLabel).T,self.softmaxWeightMat).T,
-            self.languageDerivRecursion(givenSentenceTree).T)
+            languageWeightGradient = self.buildLanguageWeightGradient(
+                            predictionVec,correctLabel,givenSentenceTree)
             #wordEmbedingGradient = self.buildWordEmbedingGradient(
             #        givenSentenceTree,predictionVec,correctLabel)
             #then update weights
             self.softmaxWeightMat -= learningRate * softmaxMatGradient
             self.languageWeightMat -= learningRate * languageWeightGradient
             #self.wordEmbedingMat -= learningRate * wordEmbedingGradient
-            #print self.getAccuracy(self.trainingSet)
+            print self.getAccuracy(self.trainingSet)
     
     def trainManually(self,numIterations,learningRate):
         #helper that trains our neural network using standard GD (not
@@ -237,17 +296,15 @@ class neuralNet(Struct):
                 correctLabel = parseTree.labelVec
                 softmaxMatGradient += ((predictionVec - correctLabel)
                                     * parseTree.langVec.transpose())
-                languageWeightGradient += np.dot(
-                    np.dot((predictionVec - correctLabel).T,
-                            self.softmaxWeightMat).T,
-                        self.languageDerivRecursion(parseTree).T)
-                wordEmbedingGradient += self.buildWordEmbedingGradient(
-                            parseTree,predictionVec,correctLabel)
+                languageWeightGradient += self.buildLanguageWeightGradient(
+                        predictionVec,correctLabel,parseTree)                
+                #wordEmbedingGradient += self.buildWordEmbedingGradient(
+                #            parseTree,predictionVec,correctLabel)
             #then update weights
             self.softmaxWeightMat -= learningRate * softmaxMatGradient
             self.languageWeightMat -= learningRate * languageWeightGradient
-            self.wordEmbedingMat -= learningRate * wordEmbedingGradient
-            print self.getAccuracy(self.trainingSet)
+            #self.wordEmbedingMat -= learningRate * wordEmbedingGradient
+            #print self.getAccuracy(self.trainingSet)
    
     def train(self,numIterations,learningRate,trainStochastically = False):
         #main layer to see method of training
@@ -260,6 +317,8 @@ class neuralNet(Struct):
             self.trainStochastically(numIterations,learningRate)
         else:
             self.trainManually(numIterations,learningRate)
+
+    #diagnostic methods
 
     def getAccuracy(self,parseTreeList):
         if (self.weightsInitialized == False):
@@ -315,7 +374,7 @@ def testForwardPropagation(numLabels,sentenceDim,vocabFilename,datasetFilename):
     practiceNeuralNet = neuralNet(numLabels,sentenceDim,len(vocabDict),
                                     vocabDict,parseTreeList)
     print practiceNeuralNet.getAccuracy(practiceNeuralNet.trainingSet)
-    practiceNeuralNet.train(3,30)
+    practiceNeuralNet.train(3,30,True)
 
 
 testForwardPropagation(3,6,"../data/ibcVocabulary.pkl",

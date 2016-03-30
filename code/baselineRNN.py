@@ -193,6 +193,7 @@ class neuralNet(Struct):
         columnNumList = list(set(columnNumList)) #to get unique
         wordEmbedingGradMatrix = np.zeros((self.sentenceDim,
                                             len(self.vocabDict)))
+        #test purposes
         for columnNum in columnNumList:
             #find gradient for this column
             wordEmbedingGradMatrix[:,columnNum] = self.findColGrad(
@@ -200,11 +201,7 @@ class neuralNet(Struct):
         #then return structure
         return softmaxLayerDeriv * wordEmbedingGradMatrix
 
-    def train(self,numIterations,learningRate):
-        #helps train our weight matrix using SGD
-        if (self.weightsInitialized == False):
-            #initialize it
-            self.initializedWeights()
+    def trainStochastically(self,numIterations,learningRate):
         #run SGD based on cross entropy function
         for i in xrange(numIterations):
             #get predictor ind
@@ -217,17 +214,56 @@ class neuralNet(Struct):
             languageWeightGradient = np.dot(
             np.dot((predictionVec - correctLabel).T,self.softmaxWeightMat).T,
             self.languageDerivRecursion(givenSentenceTree).T)
-            wordEmbedingGradient = self.buildWordEmbedingGradient(
-                    givenSentenceTree,predictionVec,correctLabel)
+            #wordEmbedingGradient = self.buildWordEmbedingGradient(
+            #        givenSentenceTree,predictionVec,correctLabel)
+            #then update weights
+            self.softmaxWeightMat -= learningRate * softmaxMatGradient
+            self.languageWeightMat -= learningRate * languageWeightGradient
+            #self.wordEmbedingMat -= learningRate * wordEmbedingGradient
+            #print self.getAccuracy(self.trainingSet)
+    
+    def trainManually(self,numIterations,learningRate):
+        #helper that trains our neural network using standard GD (not
+        #SGD)
+        for i in xrange(numIterations):
+            #initialize our gradients
+            softmaxMatGradient = np.zeros(self.softmaxWeightMat.shape)
+            languageWeightGradient = np.zeros(self.languageWeightMat.shape)
+            wordEmbedingGradient = np.zeros(self.wordEmbedingMat.shape)
+            #run through each parse tree
+            for parseTree in self.trainingSet:
+                predictionVec = self.forwardProp(parseTree)
+                #add to gradient of weights
+                correctLabel = parseTree.labelVec
+                softmaxMatGradient += ((predictionVec - correctLabel)
+                                    * parseTree.langVec.transpose())
+                languageWeightGradient += np.dot(
+                    np.dot((predictionVec - correctLabel).T,
+                            self.softmaxWeightMat).T,
+                        self.languageDerivRecursion(parseTree).T)
+                wordEmbedingGradient += self.buildWordEmbedingGradient(
+                            parseTree,predictionVec,correctLabel)
             #then update weights
             self.softmaxWeightMat -= learningRate * softmaxMatGradient
             self.languageWeightMat -= learningRate * languageWeightGradient
             self.wordEmbedingMat -= learningRate * wordEmbedingGradient
-            print self.softmaxWeightMat
-            print self.languageWeightMat
             print self.getAccuracy(self.trainingSet)
+   
+    def train(self,numIterations,learningRate,trainStochastically = False):
+        #main layer to see method of training
+        #check for initialization
+        if (self.weightsInitialized == False):
+            #initialize it
+            self.initializedWeights()
+        #then make training decision
+        if (trainStochastically): #we will use the stochastic method
+            self.trainStochastically(numIterations,learningRate)
+        else:
+            self.trainManually(numIterations,learningRate)
 
     def getAccuracy(self,parseTreeList):
+        if (self.weightsInitialized == False):
+            self.initializedWeights()
         #helper to get accuracy on a given set of data
         numCorrect = 0
         #check num correct
@@ -278,17 +314,9 @@ def testForwardPropagation(numLabels,sentenceDim,vocabFilename,datasetFilename):
     #then forward propagate through the neural network
     practiceNeuralNet = neuralNet(numLabels,sentenceDim,len(vocabDict),
                                     vocabDict,parseTreeList)
-    print parseTreeList[0].get_words()
-    print practiceNeuralNet.forwardProp(parseTreeList[0])
-    print parseTreeList[0].langVec
-    print parseTreeList[100].get_words()
-    print practiceNeuralNet.forwardProp(parseTreeList[100])
-    print parseTreeList[100].langVec
-    print practiceNeuralNet.languageWeightMat
     print practiceNeuralNet.getAccuracy(practiceNeuralNet.trainingSet)
-    print practiceNeuralNet.train(20000,30)
-    print practiceNeuralNet.languageWeightMat
-    print practiceNeuralNet.getAccuracy(practiceNeuralNet.trainingSet)
+    practiceNeuralNet.train(3,30)
+
 
 testForwardPropagation(3,6,"../data/ibcVocabulary.pkl",
                            "../data/alteredIBCData.pkl")

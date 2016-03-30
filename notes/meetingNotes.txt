@@ -6,4 +6,36 @@ Meeting Notes
     --Gameplan:
         ---Anastassia Will work on sentence and document-level vectorization
         ---Ian and I will replicate results of paper
-    
+3/26/2016 4:02 PM
+-Word Composition Matrix: Keeps track of our language model
+-Each parse tree's head is labeled
+-BPTS paper is a good reference as well
+3/30/2016 4:29 PM
+-word2vec: need to initialize word embedding matrices
+-RNTN: goes beyond the baseline RNN
+-Check out Stanford CoreNLP
+-Michael
+    --Do adjustments to gradients
+    --implement left-right variants: might need more data for this, put it
+        off for now
+    --Change treeUtil.py interface
+    --Put GoogleNewsVectors into Data
+        ---gensim is a dependency
+    --Write up reference of gradient calculations
+    --send a little list of potential data structure desires
+-Anastassia
+    --json to tree processing
+    --mess around with softmax baselines
+-Main Plan:
+    --Finish Baselines:
+        ---get trees of presidential corpus
+        ---json to tree processing
+        ---implement word2vec - word embedding initialization
+        ---Writeup of gradient calculations
+        ---Adjust Word Embedding Gradient
+        ---write-in bias level vectors
+-Future Ideas:
+    --try to play around with Phrase Level Labels
+    --Play around with Dependency Structure
+    --Try out recursive neural tensor network (RNTN)
+    --Potentially play around with modifications of treeUtil

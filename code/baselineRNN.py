@@ -143,25 +143,59 @@ class neuralNet(Struct):
         self.lossFunction = crossEntropy
     
         
-    def findColGrad(self,givenSentenceTree,wordNum):
-        #find the column gradient at column wordNum in the sentence tree
-        if (isinstance(givenSentenceTree,treeUtil.leafObj)):
-            #it is word, check if it of wordNum
-            if (givenSentenceTree.alpha == wordNum):
-                return np.ones((self.sentenceDim,1))
-            else:
-                return np.zeros((self.sentenceDim,1))
+    #functions designed to find word embeding gradient
+    
+    def getColumnGradientPaths(self,parseTree,wordNum):
+        #gets vocabulary-level column gradient paths based on wordNum
+        colGradPathList = []
+        givenPath = []
+        def getColumnGradientPathsWrapper(parseTree,wordNum,colGradPathList,
+                                            givenPath):
+            #main function for figuring out if this is the appropriate
+            #gradient path
+            givenPath.append(parseTree)
+            if (isinstance(parseTree,treeUtil.leafObj)):
+                #check if it's our word
+                if (parseTree.alpha == wordNum):
+                    #append it
+                    colGradPathList.append(givenPath)
+            else: #it is a phrase, look at left and right subpaths
+                leftGivenPath = copy.deepcopy(givenPath)
+                rightGivenPath = copy.deepcopy(givenPath)
+                getColumnGradientPathsWrapper(parseTree.c1,wordNum,
+                                              colGradPathList,leftGivenPath)
+                getColumnGradientPathsWrapper(parseTree.c2,wordNum,
+                                              colGradPathList,rightGivenPath)
+        getColumnGradientPathsWrapper(parseTree,wordNum,colGradPathList,
+                                      givenPath)
+        return colGradPathList
+    
+    def calculateColGradPath(self,gradientPath):
+        #given a particular gradient path, calculate the column gradient
+        if (len(gradientPath) == 1):
+            #reached end of path
+            givenLeafNode = gradientPath[0]
+            assert(isinstance(givenLeafNode,treeUtil.leafObj))
+            wordLevelDeriv = np.ones((1,self.sentenceDim))
+            return wordLevelDeriv
         else:
-            #take gradient for a sentence
+            #we have a phrase level gradient
+            givenPhraseTree = gradientPath[0]
             outerLayerDeriv = derivLanguageActivFunc(
-                            np.dot(self.languageWeightMat,
-                                givenSentenceTree.c1.langVec
-                                + givenSentenceTree.c2.langVec))
-            #once we have outer layer, take inner layer to consider
-            innerLayerDeriv = np.dot(self.languageWeightMat,
-                    self.findColGrad(givenSentenceTree.c1,wordNum)
-                    + self.findColGrad(givenSentenceTree.c2,wordNum))
-            return outerLayerDeriv * innerLayerDeriv
+                    np.dot(self.languageWeightMat,
+                    givenPhraseTree.c1.langVec + givenPhraseTree.c2.langVec))
+            currentLayerDeriv = np.dot(outerLayerDeriv.T,self.languageWeightMat)
+            return currentLayerDeriv * self.calculateColGradPath(
+                                                    gradientPath[1:])
+
+    def findColGrad(self,givenSentenceTree,wordNum):
+        #main wrapper for finding a given column-level gradient
+        listOfGradientPaths = self.getColumnGradientPaths(givenSentenceTree,
+                                                          wordNum)
+        colGradDeriv = 0 #we will add to this
+        for gradientPath in listOfGradientPaths:
+            colGradDeriv += self.calculateColGradPath(gradientPath)
+        return colGradDeriv
 
     def buildWordEmbedingGradient(self,
                                 givenSentenceTree,predictionVec,correctLabel):
@@ -173,13 +207,13 @@ class neuralNet(Struct):
         for leaf in givenSentenceTree.get_leaves():
             columnNumList.append(leaf.alpha) #contains column reference number
         columnNumList = list(set(columnNumList)) #to get unique
-        wordEmbedingGradMatrix = np.random.rand(self.sentenceDim,
-                                            len(self.vocabDict))
+        wordEmbedingGradMatrix = np.zeros((self.sentenceDim,
+                                            len(self.vocabDict)))
         #test purposes
         for columnNum in columnNumList:
             #find gradient for this column
             wordEmbedingGradMatrix[:,columnNum] = self.findColGrad(
-                    givenSentenceTree,columnNum).T
+                    givenSentenceTree,columnNum).flatten()
         #then return structure
         return softmaxLayerDeriv * wordEmbedingGradMatrix
     
@@ -279,6 +313,7 @@ class neuralNet(Struct):
             self.softmaxWeightMat -= learningRate * softmaxMatGradient
             self.languageWeightMat -= learningRate * languageWeightGradient
             self.wordEmbedingMat -= learningRate * wordEmbedingGradient
+            print(self.languageWeightMat)
             print self.getAccuracy(self.trainingSet)
     
     def trainManually(self,numIterations,learningRate):

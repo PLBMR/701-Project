@@ -409,7 +409,7 @@ def testForwardPropagation(numLabels,sentenceDim,vocabFilename,datasetFilename):
     practiceNeuralNet = neuralNet(numLabels,sentenceDim,len(vocabDict),
                                     vocabDict,parseTreeList)
     print practiceNeuralNet.getAccuracy(practiceNeuralNet.trainingSet)
-    practiceNeuralNet.train(80,1,True)
+    practiceNeuralNet.train(1000,1,True)
 
 
 testForwardPropagation(3,6,"../data/ibcVocabulary.pkl",

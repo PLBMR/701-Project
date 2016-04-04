@@ -1,0 +1,83 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath, amsfonts, amsthm, amssymb}  % Some math symbols
+\usepackage{enumerate}
+\usepackage{fullpage}
+\usepackage[x11names, rgb]{xcolor}
+\usepackage{tikz}
+\usepackage{graphicx}
+\usetikzlibrary{snakes,arrows,shapes}
+\usepackage{wasysym}
+\usepackage{dsfont}
+\usepackage{centernot}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt plus 1pt}
+\pagestyle{empty}
+
+\def\indented#1{\list{}{}\item[]}
+\let\indented=\endlist
+
+\newcounter{questionCounter}
+\newcounter{partCounter}[questionCounter]
+
+\newenvironment{question}[2][\arabic{questionCounter}]{%
+    \addtocounter{questionCounter}{1}%
+    \setcounter{partCounter}{0}%
+    \vspace{.25in} \hrule \vspace{0.5em}%
+        \noindent{\bf #2}%
+    \vspace{0.8em} \hrule \vspace{.10in}%
+}{}
+
+\renewenvironment{part}[1][\alph{partCounter}]{%
+    \addtocounter{partCounter}{1}%
+    \vspace{.10in}%
+    \begin{indented}%
+       {\bf (#1)} %
+}{\end{indented}}
+
+%%%%%%%%%%%%%%%%% Identifying Information %%%%%%%%%%%%%%%%%
+%% This is here, so that you can make your homework look %%
+%% pretty when you compile it.                           %%
+%%     DO NOT PUT YOUR NAME ANYWHERE ELSE!!!!            %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\myname}{Michael Rosenberg}
+\newcommand{\myandrew}{mmrosenb@andrew.cmu.edu}
+\newcommand{\mycourse}{10-701: Introduction to Machine Learning}
+\newcommand{\myhwname}{| Gradient Explanation}
+\newcommand{\myrecitation}{Mitchell, Section A}
+\newcommand{\myteammates}{}
+\newcommand{\Z}{\mathds{Z}}
+\newcommand{\Pr}{\mathbb{P}}
+\newcommand{\bigdot}{\textbf{.} }
+\newcommand{\spa}{\hspace{2cm}}
+\newcommand{\proposition}{\textbf{\underline{Proposition:} }}
+\newcommand{\proofwrite}{\textbf{\underline{Proof.} }}
+\newcommand{\claim}{\textbf{\underline{Claim.} }}
+\newcommand{\AFSOC}{Assume for the sake of contradiction }
+\newcommand{\theorem}{\textbf{\underline{Theorem:}} }
+\newcommand{\definition}{\textbf{\underline{Definition:}} }
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+\begin{center}
+    {\Large \mycourse} {\Large \myhwname} \\
+    \myrecitation \\
+    \myname \\
+    \myandrew \\
+    \today \\
+    %\myteammates 
+\end{center}
+
+\begin{question}{General Structure of The Neural Network}
+\end{question}
+
+\begin{question}{SoftMax Matrix}
+\end{question}
+
+\begin{question}{Language Matrix}
+\end{question}
+
+\begin{question}{Word Embedding Matrix}
+\end{question}
+
+\end{document}

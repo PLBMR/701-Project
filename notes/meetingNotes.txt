@@ -39,3 +39,9 @@ Meeting Notes
     --Play around with Dependency Structure
     --Try out recursive neural tensor network (RNTN)
     --Potentially play around with modifications of treeUtil
+4/5/2016 5:45 PM
+-3 Pages
+    --3.3: Finish Gradient Writeup
+    --A bit more background on RNNS in 2.1
+        ---Add a figure on the RNN with the parse tree
+    --

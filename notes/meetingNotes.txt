@@ -44,4 +44,17 @@ Meeting Notes
     --3.3: Finish Gradient Writeup
     --A bit more background on RNNS in 2.1
         ---Add a figure on the RNN with the parse tree
-    --
+    --Michael:
+        ---Gradient Writeup
+        ---Run sims on initialization of random word embedding matrix,
+            get statistics
+        ---if time, run new word2vec word embedding matrix
+    --Ian:
+        ---RNTNs and LSTMs
+    --Anastassia:
+        ---
+    --Potential Future:
+        ---Add Momentum
+        ---Vectorize the Functions
+        ---using schools computers
+        ---

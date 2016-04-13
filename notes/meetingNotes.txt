@@ -58,3 +58,30 @@ Meeting Notes
         ---Vectorize the Functions
         ---using schools computers
         ---
+4/13/2016 12:19 PM
+-RNNs
+    --initializations happen in self.initializedWeights()
+    --word2vec initialization
+        ---Anastassia
+    --Language Matrix
+        ---
+    --Bias Vector
+        ---May want to implement it
+    --Momentum
+        ---Learning .01; play around with that level
+        ---Batch SGD
+    --Ian
+        ---optimize code
+    --Tree interface
+        ---Send a list of interfacing
+        ---Node should have:
+            ----Label
+            ----Predicted Label
+            ----Two Children
+            ----Language Vector
+        ---Leaf Should have
+            ---Label
+            ---Predicted Label
+            ---Language Vector
+    --Bag of Words to Label our phrases
+    --Potentially try stuff with unlabelled data

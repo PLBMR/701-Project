@@ -4,11 +4,15 @@
 # imports
 
 import cPickle
+from gensim.models.word2vec import Word2Vec
 import numpy as np
 from structClass import Struct
 import random #for SGD
+import sys
 import treeUtil
 import copy #for help with keeping track of chain rule paths
+
+from nltk.stem.lancaster import LancasterStemmer
 
 def datasetLoadIn(datasetFilename):
     # helper designed to load in our initial dataset
@@ -40,12 +44,12 @@ def derivLanguageActivFunc(vec):
 
 class neuralNet(Struct):
     def __init__(self, numLabels, sentenceDim, vocabSize, vocabDict,
-                trainingSet):
+                trainingSet, useWord2Vec=True):
+
         #for the softmax layer
         self.softmaxWeightMat = np.zeros((numLabels, sentenceDim))
         #for the basic language layer
         self.languageWeightMat = np.zeros((sentenceDim,sentenceDim))
-        #have our word embedding matrix
         self.wordEmbedingMat = np.zeros((sentenceDim,vocabSize))
         self.vocabDict = vocabDict #to keep track of our vocabulary
         self.trainingSet = trainingSet #for training our data
@@ -53,7 +57,33 @@ class neuralNet(Struct):
         self.sentenceDim = sentenceDim
         self.weightsInitialized = False
         self.lossFunction = None
+        self.useWord2Vec = useWord2Vec
     
+    def makeWordMat(self, vocabDict, dim=300):
+        # Use Word2Vec to make a matrix of the vocabulary
+        # Dim is the size of vectors to use; however, if we use
+        # the google corpus, we will want to use dim=300
+        
+        # Load google model
+        model = Word2Vec.load_word2vec_format('../data/GoogleNews-vectors-negative300.bin',
+                                             binary=True)
+
+        all_words = [[0.] * dim] * len(vocabDict.keys()) # Dummy set-up
+
+        missing = 0
+        for word in vocabDict:
+            idx = vocabDict[word]
+            try:
+                all_words[idx] = model[word.split('-')[0]]
+            except:
+                # If the google corpus does not have a word, just leave its
+                # vector at zero, these comprise < 3 % of the data.
+                missing += 1
+
+
+        print "Number of Words missing:", missing, len(all_words)
+        return np.array(all_words).transpose()
+
     def setLabels(self,trainingSet):
         #given a list of parse trees, create a label vector and assign to
         #each parse tree
@@ -127,8 +157,12 @@ class neuralNet(Struct):
                                              self.softmaxWeightMat.shape[1])
         self.languageWeightMat = np.random.rand(self.languageWeightMat.shape[0],
                                              self.languageWeightMat.shape[1])
-        self.wordEmbedingMat = np.random.rand(self.wordEmbedingMat.shape[0],
-                                             self.wordEmbedingMat.shape[1])
+
+        if self.useWord2Vec:
+            self.wordEmbedingMat = self.makeWordMat(self.vocabDict)
+        else:
+            self.wordEmbedingMat = np.random.rand(self.wordEmbedingMat.shape[0],
+                                              self.wordEmbedingMat.shape[1])
 
     def setLossFunction(self, toSet):
         #function
@@ -412,6 +446,6 @@ def testForwardPropagation(numLabels,sentenceDim,vocabFilename,datasetFilename):
     practiceNeuralNet.train(1000,1,True)
 
 
-testForwardPropagation(3,6,"../data/ibcVocabulary.pkl",
+testForwardPropagation(3,300,"../data/ibcVocabulary.pkl",
                            "../data/alteredIBCData.pkl")
     

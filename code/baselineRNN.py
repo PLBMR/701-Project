@@ -349,6 +349,7 @@ class neuralNet(Struct):
         #first, account for the derivative at the softmax layer
         softmaxLayerDeriv = np.dot((predictedLabel - correctLabel).T,
                                     self.softmaxWeightMat)
+        print "softmaxLayerDeriv is", softmaxLayerDeriv
         #then, generate the sentence level derivative by performing gradient
         #chain rule to all paths to the language level matrix
         listOfChainRulePaths = self.getLanguageChainRulePaths(givenSentenceTree)
@@ -357,6 +358,7 @@ class neuralNet(Struct):
         languageLayerDeriv = np.zeros((self.sentenceDim,1))
         for langGradientPath in listOfChainRulePaths:
             languageLayerDeriv += self.languageDerivRecursion(langGradientPath)
+        print "languageLayerDeriv is", languageLayerDeriv
         languageWeightGradient = np.dot(softmaxLayerDeriv.T,
                                         languageLayerDeriv.T)
         return languageWeightGradient

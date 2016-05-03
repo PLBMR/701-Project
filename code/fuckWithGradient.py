@@ -4,15 +4,11 @@
 # imports
 
 import cPickle
-from gensim.models.word2vec import Word2Vec
 import numpy as np
 from structClass import Struct
 import random #for SGD
-import sys
 import treeUtil
 import copy #for help with keeping track of chain rule paths
-
-from nltk.stem.lancaster import LancasterStemmer
 
 def datasetLoadIn(datasetFilename):
     # helper designed to load in our initial dataset
@@ -29,27 +25,36 @@ def softMaxFunc(vec):
     softMaxVec = np.exp(vec) / np.sum(np.exp(vec))
     return softMaxVec
 
-def TanhActivFunc(vec):
+def languageActivFunc(vec):
     #given a language vector, calculate the activation function of the langauge
     #vector
     return np.tanh(vec)
 
-def derivTanhActivFunc(vec):
+def derivLanguageActivFunc(vec):
     #given a language vector, calculate the derivative function of the
     #laguage vector
     return (float(1) / np.cosh(vec)) ** 2
+
+def allEqual(vec):
+    #checks to see if all values in the vec are epsilon close to each other
+    epsilon = .00001
+    for i in xrange(vec.shape[0]):
+        for j in xrange(vec.shape[0]):
+            if ((vec[i,0] - vec[j,0]) > epsilon):
+                return False
+    return True
 
 # neural network class
 
 
 class neuralNet(Struct):
     def __init__(self, numLabels, sentenceDim, vocabSize, vocabDict,
-                trainingSet, useWord2Vec=True, wordMatrixFilename=None):
-
+                trainingSet):
         #for the softmax layer
         self.softmaxWeightMat = np.zeros((numLabels, sentenceDim))
         #for the basic language layer
         self.languageWeightMat = np.zeros((sentenceDim,sentenceDim))
+        #have our word embedding matrix
         self.wordEmbedingMat = np.zeros((sentenceDim,vocabSize))
         self.vocabDict = vocabDict #to keep track of our vocabulary
         self.trainingSet = trainingSet #for training our data
@@ -57,36 +62,7 @@ class neuralNet(Struct):
         self.sentenceDim = sentenceDim
         self.weightsInitialized = False
         self.lossFunction = None
-        self.useWord2Vec = useWord2Vec
-        self.wordMatrixFilename = wordMatrixFilename
-        #helper for storing language activation function
-        self.langActivFunc = None
-        self.derivLangActivFunc = None
-
-    def makeWordMat(self, dim=300):
-        # Use Word2Vec to make a matrix of the vocabulary
-        # Dim is the size of vectors to use; however, if we use
-        # the google corpus, we will want to use dim=300
-        
-        # Load google model
-        model = Word2Vec.load_word2vec_format('../data/GoogleNews-vectors-negative300.bin',
-                                             binary=True)
-
-        all_words = [[0.] * dim] * len(self.vocabDict.keys()) # Dummy set-up
-
-        missing = 0
-        for word in self.vocabDict:
-            idx = self.vocabDict[word]
-            try:
-                all_words[idx] = model[word.split('-')[0]]
-            except:
-                # If the google corpus does not have a word, just leave its
-                # vector at zero, these comprise < 3 % of the data.
-                missing += 1
-
-        print "Number of Words missing:", missing, len(all_words)
-        return np.array(all_words).transpose()
-
+    
     def setLabels(self,trainingSet):
         #given a list of parse trees, create a label vector and assign to
         #each parse tree
@@ -147,6 +123,8 @@ class neuralNet(Struct):
         #given the sentence vector, predicts the one-hot vector associated
         #with that sentence vector
         probabilityPredVec = self.forwardProp(parseTree)
+        if (allEqual(probabilityPredVec)): #push out the original label
+            return parseTree.labelVec
         #then produce one hot vector of this
         oneHotPredVec = np.zeros(probabilityPredVec.shape)
         predictedLabelIndex = np.argmax(probabilityPredVec)
@@ -160,17 +138,8 @@ class neuralNet(Struct):
                                              self.softmaxWeightMat.shape[1])
         self.languageWeightMat = np.random.rand(self.languageWeightMat.shape[0],
                                              self.languageWeightMat.shape[1])
-
-        
-        if self.useWord2Vec:
-            # If prepared matrix is specified, assume we want to use it.
-            if self.wordMatrixFilename:
-                self.wordEmbedingMat = cPickle.load(open(self.wordMatrixFilename))
-            else:
-                self.wordEmbedingMat = self.makeWordMat()
-        else:
-            self.wordEmbedingMat = np.random.rand(self.wordEmbedingMat.shape[0],
-                                              self.wordEmbedingMat.shape[1])
+        self.wordEmbedingMat = np.random.rand(self.wordEmbedingMat.shape[0],
+                                             self.wordEmbedingMat.shape[1])
 
     def setLossFunction(self, toSet):
         #function
@@ -218,7 +187,7 @@ class neuralNet(Struct):
             #reached end of path
             givenLeafNode = gradientPath[0]
             assert(isinstance(givenLeafNode,treeUtil.leafObj))
-            wordLevelDeriv = np.ones((1,self.sentenceDim))
+            wordLevelDeriv = np.ones((1,self.sentenceDim)).T
             return wordLevelDeriv
         else:
             #we have a phrase level gradient
@@ -226,9 +195,10 @@ class neuralNet(Struct):
             outerLayerDeriv = derivLanguageActivFunc(
                     np.dot(self.languageWeightMat,
                     givenPhraseTree.c1.langVec + givenPhraseTree.c2.langVec))
-            currentLayerDeriv = np.dot(outerLayerDeriv.T,self.languageWeightMat)
-            return currentLayerDeriv * self.calculateColGradPath(
-                                                    gradientPath[1:])
+            currentLayerDeriv = (np.multiply(outerLayerDeriv,
+                    np.sum(np.matrix(self.languageWeightMat),axis = 1)))
+            return np.multiply(currentLayerDeriv,self.calculateColGradPath(
+                                                    gradientPath[1:]))
 
     def findColGrad(self,givenSentenceTree,wordNum):
         #main wrapper for finding a given column-level gradient
@@ -275,15 +245,15 @@ class neuralNet(Struct):
             #by chain, take derivative wrt functionInputVector
             derivFunctionInputVector = (givenPhrase.c1.langVec 
                                             + givenPhrase.c2.langVec)
-            return derivActivFuncOutput * derivFunctionInputVector
+            return derivActivFuncOutput * np.sum(derivFunctionInputVector)
         else: #must take with respect to subsequent path
             givenPhrase = langGradientPath[0]
             functionInputVector = np.dot(self.languageWeightMat,
                                 givenPhrase.c1.langVec + givenPhrase.c2.langVec)
             derivActivFuncOutput = derivLanguageActivFunc(functionInputVector)
             #take derivative wrt next phrase in the path
-            currentPathOutputDeriv = (
-                np.dot(derivActivFuncOutput.T,self.languageWeightMat)).T
+            currentPathOutputDeriv = (derivActivFuncOutput * np.sum(
+                np.matrix(self.languageWeightMat),axis = 1).T)
             return currentPathOutputDeriv * self.languageDerivRecursion(
                     langGradientPath[1:])
 
@@ -345,23 +315,20 @@ class neuralNet(Struct):
             predictionVec = self.forwardProp(givenSentenceTree)
             #get gradient of weights
             correctLabel = givenSentenceTree.labelVec
-
             softmaxMatGradient = ((predictionVec - correctLabel)
                                     * givenSentenceTree.langVec.transpose())
             languageWeightGradient = self.buildLanguageWeightGradient(
                             predictionVec,correctLabel,givenSentenceTree)
-            wordEmbedingGradient = self.buildWordEmbedingGradient(
-                    givenSentenceTree,predictionVec,correctLabel)
+            #wordEmbedingGradient = self.buildWordEmbedingGradient(
+            #        givenSentenceTree,predictionVec,correctLabel)
             #then update weights
             self.softmaxWeightMat -= learningRate * softmaxMatGradient
             self.languageWeightMat -= learningRate * languageWeightGradient
-            self.wordEmbedingMat -= learningRate * wordEmbedingGradient
-            
-            # Only check every once in a while for sanity
-            if i%5 == 0:
-                print(self.languageWeightMat)
-                print self.getAccuracy(self.trainingSet)
-    
+            #self.wordEmbedingMat -= learningRate * wordEmbedingGradient
+            print(self.languageWeightMat)
+            print self.getAccuracy(self.trainingSet)
+            print self.getLoss(self.trainingSet)
+
     def trainManually(self,numIterations,learningRate):
         #helper that trains our neural network using standard GD (not
         #SGD)
@@ -379,12 +346,12 @@ class neuralNet(Struct):
                                     * parseTree.langVec.transpose())
                 languageWeightGradient += self.buildLanguageWeightGradient(
                         predictionVec,correctLabel,parseTree)                
-                #wordEmbedingGradient += self.buildWordEmbedingGradient(
-                #            parseTree,predictionVec,correctLabel)
+                wordEmbedingGradient += self.buildWordEmbedingGradient(
+                            parseTree,predictionVec,correctLabel)
             #then update weights
             self.softmaxWeightMat -= learningRate * softmaxMatGradient
             self.languageWeightMat -= learningRate * languageWeightGradient
-            #self.wordEmbedingMat -= learningRate * wordEmbedingGradient
+            self.wordEmbedingMat -= learningRate * wordEmbedingGradient
             #print self.getAccuracy(self.trainingSet)
    
     def train(self,numIterations,learningRate,trainStochastically = False):
@@ -400,6 +367,18 @@ class neuralNet(Struct):
             self.trainManually(numIterations,learningRate)
 
     #diagnostic methods
+    
+    def getLoss(self,parseTreeList):
+        #gets the loss of our function given the parse tree list
+        if (self.weightsInitialized == False):
+            self.initializedWeights()
+        self.defaultLossFunction()
+        loss = 0
+        for i in xrange(len(parseTreeList)):
+            parseTree = parseTreeList[i]
+            loss += self.lossFunction(self.forwardProp(parseTree),
+                                    parseTree.labelVec)
+        return loss
 
     def getAccuracy(self,parseTreeList):
         if (self.weightsInitialized == False):
@@ -445,29 +424,19 @@ def generateLabel(numLabels,predVec):
 
 #test processses
 
-def testForwardPropagation(numLabels,sentenceDim,vocabFilename,
-                                    datasetFilename, wordMatrixFilename=None):
+def testForwardPropagation(numLabels,sentenceDim,vocabFilename,datasetFilename):
     #tests out the forward propagation developed for our basic RNN
     #load vocabulary
     vocabDict = cPickle.load(open(vocabFilename,"rb"))
     #load dataset
     parseTreeList = cPickle.load(open(datasetFilename,"rb"))
-    
-    random.shuffle(parseTreeList)
-
     #then forward propagate through the neural network
     practiceNeuralNet = neuralNet(numLabels,sentenceDim,len(vocabDict),
-                                    vocabDict,parseTreeList, 
-                                    wordMatrixFilename=wordMatrixFilename)
-
+                                    vocabDict,parseTreeList)
     print practiceNeuralNet.getAccuracy(practiceNeuralNet.trainingSet)
-    practiceNeuralNet.train(1000,1,True)
+    practiceNeuralNet.train(1000,2,True)
 
 
-# testForwardPropagation(3,300,"../data/ibcVocabulary.pkl",
-#                            "../data/alteredIBCData.pkl")
-testForwardPropagation(2,300,"../data/PSCVocabulary.pkl",
-                            "../data/alteredPSCData.pkl",
-                            "../data/PSCVocabMatrix.pkl")
-
+testForwardPropagation(3,2,"../data/ibcVocabulary.pkl",
+                           "../data/alteredIBCData.pkl")
     

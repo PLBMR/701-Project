@@ -21,7 +21,6 @@ def datasetLoadIn(datasetFilename):
     [liberalSent, conservSent, neutralSent] = cPickle.load(datasetFile)
     return [liberalSent, conservSent, neutralSent]
 
-
 # activation functions
 
 def softMaxFunc(vec):
@@ -41,22 +40,11 @@ def derivTanhActivFunc(vec):
 
 def rectActivFunc(vec):
     #holds our ReLU function
-    outputVec = np.zeros(vec.shape)
-    for i in xrange(vec.shape[0]):
-        for j in xrange(vec.shape[1]):
-            outputVec[i,j] = max(0,vec[i,j])
-    return outputVec
+    return log(np.exp(vec) + 1)
 
 def derivRectActivFunc(vec):
     #derivative of our ReLU function
-    outputVec = np.zeros(vec.shape)
-    for i in xrange(vec.shape[0]):
-        for j in xrange(vec.shape[1]):
-            if (vec[i,j] > 0): #derivative is 1
-                outputVec[i,j] = 1
-            else:
-                outputVec[i,j] = 0
-    return outputVec
+    return np.exp(vec) / (1 + np.exp(vec))
 
 # neural network class
 
@@ -179,13 +167,9 @@ class neuralNet(Struct):
         else: #we have a recursively defined object
             leftChildVec = self.vectorizeSentenceTree(sentenceTree.c1)
             rightChildVec = self.vectorizeSentenceTree(sentenceTree.c2)
-            #print "Left Child is", leftChildVec
-            #print "Right Child is", rightChildVec
-            #calculate sentenceVec
-            sentenceVec = self.langActivFunc(
-                    np.dot(self.languageWeightMat,leftChildVec)
+            inputVector = (np.dot(self.languageWeightMat,leftChildVec)
                     + np.dot(self.languageWeightMat,rightChildVec))
-            #print "sentenceVec Is", sentenceVec
+            sentenceVec = self.langActivFunc(inputVector)
             #assign it and then return
             sentenceTree.langVec = sentenceVec
             return sentenceVec
@@ -204,9 +188,10 @@ class neuralNet(Struct):
             self.derivLangActivFunc = derivRectActivFunc
         #first vectorize sentence
         sentenceVec = self.vectorizeSentenceTreeNonRec(sentenceTree)
-
         #then move the sentence through the softmax layer
         inputVec = np.dot(self.softmaxWeightMat, sentenceVec)
+        #normalize before placing into function to ensure a reasonable
+        #representation in the distribution
         givenSoftMaxVec = softMaxFunc(inputVec)
         return givenSoftMaxVec
     
@@ -393,7 +378,10 @@ class neuralNet(Struct):
         #first, account for the derivative at the softmax layer
         softmaxLayerDeriv = np.dot((predictedLabel - correctLabel).T,
                                     self.softmaxWeightMat)
-        print "softmaxLayerDeriv is", softmaxLayerDeriv
+        #print "Predicted Label is", predictedLabel
+        #print "Correct Label is", correctLabel
+        #print "Soft Max Matrix is", self.softmaxWeightMat
+        #print "softmaxLayerDeriv is", softmaxLayerDeriv
         #then, generate the sentence level derivative by performing gradient
         #chain rule to all paths to the language level matrix
         listOfChainRulePaths = self.getLanguageChainRulePaths(givenSentenceTree)
@@ -402,7 +390,7 @@ class neuralNet(Struct):
         languageLayerDeriv = np.zeros((self.sentenceDim,1))
         for langGradientPath in listOfChainRulePaths:
             languageLayerDeriv += self.languageDerivRecursion(langGradientPath)
-        print "languageLayerDeriv is", languageLayerDeriv
+        #print "languageLayerDeriv is", languageLayerDeriv
         languageWeightGradient = np.dot(softmaxLayerDeriv.T,
                                         languageLayerDeriv.T)
         return languageWeightGradient
@@ -427,7 +415,7 @@ class neuralNet(Struct):
             #then update weights
             self.softmaxWeightMat -= learningRate * softmaxMatGradient
             self.languageWeightMat -= learningRate * languageWeightGradient
-            self.wordEmbedingMat -= learningRate * wordEmbedingGradient
+            #self.wordEmbedingMat -= learningRate * wordEmbedingGradient
             
             # Only check every once in a while for sanity
             if i%5 == 0:
@@ -530,10 +518,10 @@ def testForwardPropagation(numLabels,sentenceDim,vocabFilename,
 
     #then forward propagate through the neural network
     practiceNeuralNet = neuralNet(numLabels,sentenceDim,len(vocabDict),
-                                    vocabDict,parseTreeList, 
+                                    vocabDict,parseTreeList,
                                     wordMatrixFilename=wordMatrixFilename)
 
-    print practiceNeuralNet.getAccuracy(practiceNeuralNet.trainingSet)
+    #print practiceNeuralNet.getAccuracy(practiceNeuralNet.trainingSet)
     practiceNeuralNet.train(1000,1,True)
 
 

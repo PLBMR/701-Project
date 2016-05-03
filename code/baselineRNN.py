@@ -126,7 +126,47 @@ class neuralNet(Struct):
             trainingSet[i].labelVec = np.array([givenLabelVec]).T
         return labelDict
 
+
+    def vectorizeSentenceTreeNonRec(self,sentenceTree):
+
+        solutions = []
+
+        toExplore = [(sentenceTree, 0)]
+
+        while(toExplore):
+            currentNode, visitNum = toExplore.pop()
+
+            if (isinstance(currentNode,treeUtil.leafObj)):
+                #look up in our word embeding matrix
+                wordIndex = self.vocabDict[currentNode.word]
+                wordVec = self.wordEmbedingMat[:,wordIndex]
+                #then adjust it for column usage
+                wordColumnVec = np.array([wordVec]).T #for transpose
+                currentNode.langVec = wordColumnVec #for reference
+                solutions.append(wordColumnVec)
+
+            else:
+                if visitNum == 0:
+                    toExplore.append((currentNode, 1))
+                    toExplore.append((currentNode.c1, 0))
+                    toExplore.append((currentNode.c2, 0))
+                else:
+                    if len(solutions) < 2:
+                        print "your algo sucks"
+                    else:
+                        c1 = solutions.pop()
+                        c2 = solutions.pop()
+                        sentenceVec = self.langActivFunc(np.dot(
+                                                        self.languageWeightMat,
+                                                        c1 + c2))
+                    #assign it and then return
+                    currentNode.langVec = sentenceVec
+                    solutions.append(sentenceVec)
+        
+        return solutions[0]
+
     def vectorizeSentenceTree(self,sentenceTree):
+
         #given a parse tree, vectorize the parse tree
         if (isinstance(sentenceTree,treeUtil.leafObj)): #is a word,
             #look up in our word embeding matrix
@@ -163,7 +203,8 @@ class neuralNet(Struct):
             self.langActivFunc = rectActivFunc
             self.derivLangActivFunc = derivRectActivFunc
         #first vectorize sentence
-        sentenceVec = self.vectorizeSentenceTree(sentenceTree)
+        sentenceVec = self.vectorizeSentenceTreeNonRec(sentenceTree)
+
         #then move the sentence through the softmax layer
         inputVec = np.dot(self.softmaxWeightMat, sentenceVec)
         givenSoftMaxVec = softMaxFunc(inputVec)
@@ -216,27 +257,29 @@ class neuralNet(Struct):
     def getColumnGradientPaths(self,parseTree,wordNum):
         #gets vocabulary-level column gradient paths based on wordNum
         colGradPathList = []
-        givenPath = []
+        givenPath = ()
         def getColumnGradientPathsWrapper(parseTree,wordNum,colGradPathList,
                                             givenPath):
             #main function for figuring out if this is the appropriate
             #gradient path
-            givenPath.append(parseTree)
+            givenPath += (parseTree,)
             if (isinstance(parseTree,treeUtil.leafObj)):
                 #check if it's our word
                 if (parseTree.alpha == wordNum):
                     #append it
-                    colGradPathList.append(givenPath)
+                    colGradPathList.append(list(givenPath))
             else: #it is a phrase, look at left and right subpaths
-                leftGivenPath = copy.deepcopy(givenPath)
-                rightGivenPath = copy.deepcopy(givenPath)
+                leftGivenPath = givenPath
+                rightGivenPath = givenPath
                 getColumnGradientPathsWrapper(parseTree.c1,wordNum,
                                               colGradPathList,leftGivenPath)
                 getColumnGradientPathsWrapper(parseTree.c2,wordNum,
                                               colGradPathList,rightGivenPath)
+        
         getColumnGradientPathsWrapper(parseTree,wordNum,colGradPathList,
                                       givenPath)
-        return colGradPathList
+
+        return list(colGradPathList)    
     
     def calculateColGradPath(self,gradientPath):
         #given a particular gradient path, calculate the column gradient
@@ -287,11 +330,11 @@ class neuralNet(Struct):
     
     #functions designed to find the language gradient
     
-    def languageDerivRecursion(self,langGradientPath):
+    def languageDerivRecursion(self,langGradientPath, depth=0):
         #given a language gradient path (a list of nodeObj objects), create the 
         #language-level gradient with respect to this path
         assert(len(langGradientPath) >= 1)
-        if (len(langGradientPath) == 1): #just need to take the derivative
+        if (len(langGradientPath) == 1 or (depth > 3)): #just need to take the derivative
             #with respect to the matrix
             givenPhrase = langGradientPath[0]
             functionInputVector = np.dot(self.languageWeightMat,
@@ -311,30 +354,31 @@ class neuralNet(Struct):
             currentPathOutputDeriv = (
                 np.dot(derivActivFuncOutput.T,self.languageWeightMat)).T
             return currentPathOutputDeriv * self.languageDerivRecursion(
-                    langGradientPath[1:])
+                    langGradientPath[1:], depth+1)
 
 
     def getLanguageChainRulePaths(self,sentenceTree):
         #given a sentence tree, get a list of the gradient chain rule paths
         #to consider
         listOfChainRulePaths = []
-        givenPath = [] #this is designed to keep track of our paths
+        givenPath = () #this is designed to keep track of our paths
         #to append to our list
         def getLanguageChainRulePathsWrapper(sentenceTree,listOfChainRulePaths,
                                             givenPath):
             #main function for finding a path dependent on
             if (not(isinstance(sentenceTree,treeUtil.leafObj))):
                 #means that it is dependent on the language matrix
-                givenPath.append(sentenceTree)
-                listOfChainRulePaths.append(givenPath)
+                givenPath += (sentenceTree,)
+                listOfChainRulePaths.append(list(givenPath))
                 #check if its left and right sides are dependent on the language
                 #matrix
                 if (not(isinstance(sentenceTree.c1,treeUtil.leafObj))):
-                    leftGivenPath = copy.deepcopy(givenPath)
+                    leftGivenPath = givenPath
                     getLanguageChainRulePathsWrapper(sentenceTree.c1,
                             listOfChainRulePaths,leftGivenPath)
+
                 if (not(isinstance(sentenceTree.c2,treeUtil.leafObj))):
-                    rightGivenPath = copy.deepcopy(givenPath)
+                    rightGivenPath = givenPath
                     getLanguageChainRulePathsWrapper(sentenceTree.c2,
                             listOfChainRulePaths,rightGivenPath)
         #perform the wrapper
@@ -387,7 +431,8 @@ class neuralNet(Struct):
             
             # Only check every once in a while for sanity
             if i%5 == 0:
-                print(self.languageWeightMat)
+                print max(list(languageWeightGradient)[0])
+                print self.languageWeightMat
                 print self.getAccuracy(self.trainingSet)
     
     def trainManually(self,numIterations,learningRate):
@@ -497,4 +542,3 @@ def testForwardPropagation(numLabels,sentenceDim,vocabFilename,
 testForwardPropagation(2,300,"../data/PSCVocabulary.pkl",
                             "../data/alteredPSCData.pkl",
                             "../data/PSCVocabMatrix.pkl")
-

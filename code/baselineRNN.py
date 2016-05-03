@@ -258,11 +258,11 @@ class neuralNet(Struct):
     
     #functions designed to find the language gradient
     
-    def languageDerivRecursion(self,langGradientPath, depth=0):
+    def languageDerivRecursion(self,langGradientPath):
         #given a language gradient path (a list of nodeObj objects), create the 
         #language-level gradient with respect to this path
         assert(len(langGradientPath) >= 1)
-        if (len(langGradientPath) == 1 or depth > 3): #just need to take the derivative
+        if (len(langGradientPath) == 1): #just need to take the derivative
             #with respect to the matrix
             givenPhrase = langGradientPath[0]
             functionInputVector = np.dot(self.languageWeightMat,
@@ -282,7 +282,7 @@ class neuralNet(Struct):
             currentPathOutputDeriv = (
                 np.dot(derivActivFuncOutput.T,self.languageWeightMat)).T
             return currentPathOutputDeriv * self.languageDerivRecursion(
-                    langGradientPath[1:], depth+1)
+                    langGradientPath[1:])
 
 
     def getLanguageChainRulePaths(self,sentenceTree):

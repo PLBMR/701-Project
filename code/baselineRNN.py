@@ -44,7 +44,7 @@ def derivLanguageActivFunc(vec):
 
 class neuralNet(Struct):
     def __init__(self, numLabels, sentenceDim, vocabSize, vocabDict,
-                trainingSet, useWord2Vec=True):
+                trainingSet, useWord2Vec=True, wordMatrixFilename=None):
 
         #for the softmax layer
         self.softmaxWeightMat = np.zeros((numLabels, sentenceDim))
@@ -58,8 +58,9 @@ class neuralNet(Struct):
         self.weightsInitialized = False
         self.lossFunction = None
         self.useWord2Vec = useWord2Vec
+        self.wordMatrixFilename = wordMatrixFilename
     
-    def makeWordMat(self, vocabDict, dim=300):
+    def makeWordMat(self, dim=300):
         # Use Word2Vec to make a matrix of the vocabulary
         # Dim is the size of vectors to use; however, if we use
         # the google corpus, we will want to use dim=300
@@ -68,18 +69,17 @@ class neuralNet(Struct):
         model = Word2Vec.load_word2vec_format('../data/GoogleNews-vectors-negative300.bin',
                                              binary=True)
 
-        all_words = [[0.] * dim] * len(vocabDict.keys()) # Dummy set-up
+        all_words = [[0.] * dim] * len(self.vocabDict.keys()) # Dummy set-up
 
         missing = 0
-        for word in vocabDict:
-            idx = vocabDict[word]
+        for word in self.vocabDict:
+            idx = self.vocabDict[word]
             try:
                 all_words[idx] = model[word.split('-')[0]]
             except:
                 # If the google corpus does not have a word, just leave its
                 # vector at zero, these comprise < 3 % of the data.
                 missing += 1
-
 
         print "Number of Words missing:", missing, len(all_words)
         return np.array(all_words).transpose()
@@ -158,8 +158,13 @@ class neuralNet(Struct):
         self.languageWeightMat = np.random.rand(self.languageWeightMat.shape[0],
                                              self.languageWeightMat.shape[1])
 
+        
         if self.useWord2Vec:
-            self.wordEmbedingMat = self.makeWordMat(self.vocabDict)
+            # If prepared matrix is specified, assume we want to use it.
+            if self.wordMatrixFilename:
+                self.wordEmbedingMat = cPickle.load(open(self.wordMatrixFilename))
+            else:
+                self.wordEmbedingMat = self.makeWordMat()
         else:
             self.wordEmbedingMat = np.random.rand(self.wordEmbedingMat.shape[0],
                                               self.wordEmbedingMat.shape[1])
@@ -253,11 +258,11 @@ class neuralNet(Struct):
     
     #functions designed to find the language gradient
     
-    def languageDerivRecursion(self,langGradientPath):
+    def languageDerivRecursion(self,langGradientPath, depth=0):
         #given a language gradient path (a list of nodeObj objects), create the 
         #language-level gradient with respect to this path
         assert(len(langGradientPath) >= 1)
-        if (len(langGradientPath) == 1): #just need to take the derivative
+        if (len(langGradientPath) == 1 or depth > 3): #just need to take the derivative
             #with respect to the matrix
             givenPhrase = langGradientPath[0]
             functionInputVector = np.dot(self.languageWeightMat,
@@ -277,7 +282,7 @@ class neuralNet(Struct):
             currentPathOutputDeriv = (
                 np.dot(derivActivFuncOutput.T,self.languageWeightMat)).T
             return currentPathOutputDeriv * self.languageDerivRecursion(
-                    langGradientPath[1:])
+                    langGradientPath[1:], depth+1)
 
 
     def getLanguageChainRulePaths(self,sentenceTree):
@@ -337,6 +342,7 @@ class neuralNet(Struct):
             predictionVec = self.forwardProp(givenSentenceTree)
             #get gradient of weights
             correctLabel = givenSentenceTree.labelVec
+
             softmaxMatGradient = ((predictionVec - correctLabel)
                                     * givenSentenceTree.langVec.transpose())
             languageWeightGradient = self.buildLanguageWeightGradient(
@@ -347,8 +353,11 @@ class neuralNet(Struct):
             self.softmaxWeightMat -= learningRate * softmaxMatGradient
             self.languageWeightMat -= learningRate * languageWeightGradient
             self.wordEmbedingMat -= learningRate * wordEmbedingGradient
-            print(self.languageWeightMat)
-            print self.getAccuracy(self.trainingSet)
+            
+            # Only check every once in a while for sanity
+            if i%5 == 0:
+                print(self.languageWeightMat)
+                print self.getAccuracy(self.trainingSet)
     
     def trainManually(self,numIterations,learningRate):
         #helper that trains our neural network using standard GD (not
@@ -433,19 +442,29 @@ def generateLabel(numLabels,predVec):
 
 #test processses
 
-def testForwardPropagation(numLabels,sentenceDim,vocabFilename,datasetFilename):
+def testForwardPropagation(numLabels,sentenceDim,vocabFilename,
+                                    datasetFilename, wordMatrixFilename=None):
     #tests out the forward propagation developed for our basic RNN
     #load vocabulary
     vocabDict = cPickle.load(open(vocabFilename,"rb"))
     #load dataset
     parseTreeList = cPickle.load(open(datasetFilename,"rb"))
+    
+    random.shuffle(parseTreeList)
+
     #then forward propagate through the neural network
     practiceNeuralNet = neuralNet(numLabels,sentenceDim,len(vocabDict),
-                                    vocabDict,parseTreeList)
+                                    vocabDict,parseTreeList, 
+                                    wordMatrixFilename=wordMatrixFilename)
+
     print practiceNeuralNet.getAccuracy(practiceNeuralNet.trainingSet)
     practiceNeuralNet.train(1000,1,True)
 
 
-testForwardPropagation(3,300,"../data/ibcVocabulary.pkl",
-                           "../data/alteredIBCData.pkl")
+# testForwardPropagation(3,300,"../data/ibcVocabulary.pkl",
+#                            "../data/alteredIBCData.pkl")
+testForwardPropagation(2,300,"../data/PSCVocabulary.pkl",
+                            "../data/alteredPSCData.pkl",
+                            "../data/PSCVocabMatrix.pkl")
+
     

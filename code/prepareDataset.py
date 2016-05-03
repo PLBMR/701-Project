@@ -1,4 +1,4 @@
-X#prepareDataset.py
+#prepareDataset.py
 #helper script that prepares our dataset for use by our RNN
 
 #imports
@@ -53,5 +53,5 @@ def prepareDataset(ibcDatasetFilename,collapsedDatasetFilename,
     #then generate vocabulary while keeping track of indices within the vocab
     generateVocabulary(ibcDataset,vocabFilename,collapsedDatasetFilename)
 
-prepareDataset("../data/full_ibc/ibcData.pkl","../data/alteredIBCData.pkl",
-               "../data/ibcVocabulary.pkl")
+prepareDataset("../data/PSC.pkl","../data/alteredPSCData.pkl",
+               "../data/PSCVocabulary.pkl")

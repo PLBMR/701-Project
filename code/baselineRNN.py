@@ -45,7 +45,7 @@ def rectActivFunc(vec):
 
 def derivRectActivFunc(vec):
     #derivative of our ReLU function
-    return np.exp(vec) / (np.exp(vec) + 1)
+    return 1 / (np.exp(-vec) + 1)
 
 # neural network class
 
@@ -128,10 +128,13 @@ class neuralNet(Struct):
         else: #we have a recursively defined object
             leftChildVec = self.vectorizeSentenceTree(sentenceTree.c1)
             rightChildVec = self.vectorizeSentenceTree(sentenceTree.c2)
+            #print "Left Child is", leftChildVec
+            #print "Right Child is", rightChildVec
             #calculate sentenceVec
             sentenceVec = self.langActivFunc(
                     np.dot(self.languageWeightMat,leftChildVec)
                     + np.dot(self.languageWeightMat,rightChildVec))
+            #print "sentenceVec Is", sentenceVec
             #assign it and then return
             sentenceTree.langVec = sentenceVec
             return sentenceVec
@@ -283,7 +286,10 @@ class neuralNet(Struct):
             functionInputVector = np.dot(self.languageWeightMat,
                                 givenPhrase.c1.langVec + givenPhrase.c2.langVec)
             #take derivative at function level
+            #print "Input is", functionInputVector
             derivActivFuncOutput = self.derivLangActivFunc(functionInputVector)
+            #print "Deriv Layer Output is", derivActivFuncOutput
+            #print "moo"
             #by chain, take derivative wrt functionInputVector
             derivFunctionInputVector = (givenPhrase.c1.langVec 
                                             + givenPhrase.c2.langVec)
@@ -292,7 +298,10 @@ class neuralNet(Struct):
             givenPhrase = langGradientPath[0]
             functionInputVector = np.dot(self.languageWeightMat,
                                 givenPhrase.c1.langVec + givenPhrase.c2.langVec)
+            #print "Input is", functionInputVector
             derivActivFuncOutput = self.derivLangActivFunc(functionInputVector)
+            #print "Deriv Layer Output is", derivActivFuncOutput
+            #print "bear"
             #take derivative wrt next phrase in the path
             currentPathOutputDeriv = (
                 np.dot(derivActivFuncOutput.T,self.languageWeightMat)).T
@@ -482,4 +491,3 @@ testForwardPropagation(2,300,"../data/PSCVocabulary.pkl",
                             "../data/alteredPSCData.pkl",
                             "../data/PSCVocabMatrix.pkl")
 
-    

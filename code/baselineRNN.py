@@ -41,11 +41,22 @@ def derivTanhActivFunc(vec):
 
 def rectActivFunc(vec):
     #holds our ReLU function
-    return np.log(np.exp(vec) + 1)
+    outputVec = np.zeros(vec.shape)
+    for i in xrange(vec.shape[0]):
+        for j in xrange(vec.shape[1]):
+            outputVec[i,j] = max(0,vec[i,j])
+    return outputVec
 
 def derivRectActivFunc(vec):
     #derivative of our ReLU function
-    return 1 / (np.exp(-vec) + 1)
+    outputVec = np.zeros(vec.shape)
+    for i in xrange(vec.shape[0]):
+        for j in xrange(vec.shape[1]):
+            if (vec[i,j] > 0): #derivative is 1
+                outputVec[i,j] = 1
+            else:
+                outputVec[i,j] = 0
+    return outputVec
 
 # neural network class
 
@@ -286,10 +297,7 @@ class neuralNet(Struct):
             functionInputVector = np.dot(self.languageWeightMat,
                                 givenPhrase.c1.langVec + givenPhrase.c2.langVec)
             #take derivative at function level
-            #print "Input is", functionInputVector
             derivActivFuncOutput = self.derivLangActivFunc(functionInputVector)
-            #print "Deriv Layer Output is", derivActivFuncOutput
-            #print "moo"
             #by chain, take derivative wrt functionInputVector
             derivFunctionInputVector = (givenPhrase.c1.langVec 
                                             + givenPhrase.c2.langVec)
@@ -298,10 +306,7 @@ class neuralNet(Struct):
             givenPhrase = langGradientPath[0]
             functionInputVector = np.dot(self.languageWeightMat,
                                 givenPhrase.c1.langVec + givenPhrase.c2.langVec)
-            #print "Input is", functionInputVector
             derivActivFuncOutput = self.derivLangActivFunc(functionInputVector)
-            #print "Deriv Layer Output is", derivActivFuncOutput
-            #print "bear"
             #take derivative wrt next phrase in the path
             currentPathOutputDeriv = (
                 np.dot(derivActivFuncOutput.T,self.languageWeightMat)).T

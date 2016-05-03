@@ -39,6 +39,14 @@ def derivTanhActivFunc(vec):
     #laguage vector
     return (float(1) / np.cosh(vec)) ** 2
 
+def rectActivFunc(vec):
+    #holds our ReLU function
+    return np.log(np.exp(vec) + 1)
+
+def derivRectActivFunc(vec):
+    #derivative of our ReLU function
+    return np.exp(vec) / (np.exp(vec) + 1)
+
 # neural network class
 
 
@@ -121,7 +129,7 @@ class neuralNet(Struct):
             leftChildVec = self.vectorizeSentenceTree(sentenceTree.c1)
             rightChildVec = self.vectorizeSentenceTree(sentenceTree.c2)
             #calculate sentenceVec
-            sentenceVec = languageActivFunc(
+            sentenceVec = self.langActivFunc(
                     np.dot(self.languageWeightMat,leftChildVec)
                     + np.dot(self.languageWeightMat,rightChildVec))
             #assign it and then return
@@ -136,6 +144,10 @@ class neuralNet(Struct):
             self.initializedWeights()
         if (self.lossFunction == None):
             self.lossFunction = self.defaultLossFunction()
+        if (self.langActivFunc == None):
+            #initialize as ReLU
+            self.langActivFunc = rectActivFunc
+            self.derivLangActivFunc = derivRectActivFunc
         #first vectorize sentence
         sentenceVec = self.vectorizeSentenceTree(sentenceTree)
         #then move the sentence through the softmax layer
@@ -223,7 +235,7 @@ class neuralNet(Struct):
         else:
             #we have a phrase level gradient
             givenPhraseTree = gradientPath[0]
-            outerLayerDeriv = derivLanguageActivFunc(
+            outerLayerDeriv = self.derivLangActivFunc(
                     np.dot(self.languageWeightMat,
                     givenPhraseTree.c1.langVec + givenPhraseTree.c2.langVec))
             currentLayerDeriv = np.dot(outerLayerDeriv.T,self.languageWeightMat)
@@ -271,7 +283,7 @@ class neuralNet(Struct):
             functionInputVector = np.dot(self.languageWeightMat,
                                 givenPhrase.c1.langVec + givenPhrase.c2.langVec)
             #take derivative at function level
-            derivActivFuncOutput = derivLanguageActivFunc(functionInputVector)
+            derivActivFuncOutput = self.derivLangActivFunc(functionInputVector)
             #by chain, take derivative wrt functionInputVector
             derivFunctionInputVector = (givenPhrase.c1.langVec 
                                             + givenPhrase.c2.langVec)
@@ -280,7 +292,7 @@ class neuralNet(Struct):
             givenPhrase = langGradientPath[0]
             functionInputVector = np.dot(self.languageWeightMat,
                                 givenPhrase.c1.langVec + givenPhrase.c2.langVec)
-            derivActivFuncOutput = derivLanguageActivFunc(functionInputVector)
+            derivActivFuncOutput = self.derivLangActivFunc(functionInputVector)
             #take derivative wrt next phrase in the path
             currentPathOutputDeriv = (
                 np.dot(derivActivFuncOutput.T,self.languageWeightMat)).T

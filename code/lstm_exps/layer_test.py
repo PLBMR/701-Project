@@ -7,6 +7,7 @@ from keras.preprocessing.sequence import pad_sequences
 
 import numpy as np
 from random import sample
+import numpy as np
 
 from wordEmbeds import get_data
 
@@ -44,6 +45,9 @@ train = sample(range(len(X)), int(len(X)*0.8))
 
 X_train = [X[i] for i in train]
 Y_train = [Y[i] for i in train]
+
+X_train = np.array(X_train)
+Y_train = np.array(Y_train)
 
 # Important change words into indicies
 for i in range(len(X_train)):

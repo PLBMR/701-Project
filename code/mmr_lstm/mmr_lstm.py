@@ -28,11 +28,22 @@ def buildParLSTM(dataDim,numClasses,numSteps,layerSize):
                     metrics=['accuracy'])
     return decoder
 
-model = buildParLSTM(3,2,3,2)
-xtrain_a = np.random.random((3, 3))
-x_train_b = np.random.random((3, 3))
-y_train = np.random.randint(2,size = (3,2))
+numExamples = 2
+model = buildParLSTM(100,2,3,40)
+x_train_b = np.random.random((numExamples, 5))
+y_train = np.zeros((numExamples,2))
+
+xtrain_a = np.array([[[1,2,3],[1,3]],[[2,3],[4,5]]])
+#generate y_train
+#for i in xrange(numExamples):
+#   if (xtrain_a[i,0] < .5 and x_train_b[i,1] >= .5):
+#        y_train[i,0] = 1
+#   else:
+#        y_train[i,1] = 1
+
 print xtrain_a
+print xtrain_a.shape
 print x_train_b
 print y_train
-model.fit([xtrain_a,x_train_b],y_train)
+print y_train.shape
+model.fit([xtrain_a,x_train_b],y_train,nb_epoch = 300)

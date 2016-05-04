@@ -1,1 +1,11 @@
 IBC Word2Vec 300 Iterations: 41.9%
+IBC Word2Vec 2000 Iterations: 44.5%
+IBC Word2Vec 2000 Iterations: Training Set: 44.34% ; Test Set: 38.7%
+IBC Word2Vec 3000 Iterations: Training Set: 44.6% ; Test Set: 45.68%
+IBC Word2Vec Const 300 Iterations: 38.67%
+IBC Word2Vec Const 2000 Iterations: 43.7%
+IBC Word2Vec Const 2000 Iterations: Training Set: 48.05% ; Test Set: 40.68%
+PSC Random Test 300 Iterations: 50%
+PSC Random Test 1000 Iterations: 52.3%
+PSC Word2Vec Test 1000 Iterations: 51.49%
+PSC Word2Vec Const Test 2000 Iterations: 51.5%

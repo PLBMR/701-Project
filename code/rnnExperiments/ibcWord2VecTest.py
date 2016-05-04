@@ -516,15 +516,27 @@ def testForwardPropagation(numLabels,sentenceDim,vocabFilename,
     parseTreeList = cPickle.load(open(datasetFilename,"rb"))
     
     random.shuffle(parseTreeList)
+    #split data
+    print "Splitting Data"
+    testSet = random.sample(parseTreeList,len(parseTreeList)/2)
+    trainingSet = []
+    for tree in parseTreeList:
+        if (tree not in testSet):
+            trainingSet.append(tree)
 
     #then forward propagate through the neural network
     practiceNeuralNet = neuralNet(numLabels,sentenceDim,len(vocabDict),
-                                    vocabDict,parseTreeList,
+                                    vocabDict,trainingSet,
                                     wordMatrixFilename=wordMatrixFilename)
 
     #print practiceNeuralNet.getAccuracy(practiceNeuralNet.trainingSet)
-    practiceNeuralNet.train(2000,1,True)
+    print "Training Currently"
+    practiceNeuralNet.train(3000,1,True)
+    print "Accuracy on Training Set"
     print practiceNeuralNet.getAccuracy(practiceNeuralNet.trainingSet)
+    print "Accuracy on The Test Set"
+    practiceNeuralNet.labelDict = practiceNeuralNet.setLabels(testSet)
+    print practiceNeuralNet.getAccuracy(testSet)
 
 # testForwardPropagation(3,300,"../data/ibcVocabulary.pkl",
 #                            "../data/alteredIBCData.pkl")

@@ -29,7 +29,6 @@ def tree_to_seq(tree):
 		all_words[word] = vec
 
 	# TODO: comment and fix this hack..
-	print words
 	return words
 
 def get_data():

@@ -1,27 +1,38 @@
 import cPickle
 from gensim.models.word2vec import Word2Vec
 
+
 model = Word2Vec.load_word2vec_format('../../data/GoogleNews-vectors-negative300.bin', 
                                              binary=True)
 
+all_words = {}
+
 def tree_to_seq(tree):
+
 	try:
-		words = tree.get_words()
+		words = tree.get_words().split()
 
 	except:
 		words = [tree.word]
 
+
 	seq = []
 
 	for word in words:
+		vec = []
 		if word in model:
-			seq.append(model[word])
+			vec = model[word]
 		else:
-			seq.append([0. for i in range(200)])
+			vec = [0.0001 for i in range(300)]
 
-	return seq
+		seq.append(vec)
+		all_words[word] = vec
 
-def get_vectors():
+	# TODO: comment and fix this hack..
+	print words
+	return words
+
+def get_data():
 
 	all_trees = cPickle.load(open("../../data/lstmTrees.pkl"))
 
@@ -34,5 +45,5 @@ def get_vectors():
 		libSeq.append(tree_to_seq(t1))
 		repSeq.append(tree_to_seq(t2))
 
-	return libSeq, repSeq
+	return libSeq, repSeq, all_words
 

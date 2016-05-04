@@ -17,7 +17,7 @@ def tree_to_seq(tree):
 		if word in model:
 			seq.append(model[word])
 		else:
-			seq.append([0. for i in range(200)])
+			seq.append([0. for i in range(300)])
 
 	return seq
 

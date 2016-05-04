@@ -418,7 +418,7 @@ class neuralNet(Struct):
             self.wordEmbedingMat -= learningRate * wordEmbedingGradient
             
             # Only check every once in a while for sanity
-            if i%5 == 0:
+            if i%100 == 0:
                 print max(list(languageWeightGradient)[0])
                 print "----"
                 print self.getAccuracy(self.trainingSet)
@@ -523,8 +523,8 @@ def testForwardPropagation(numLabels,sentenceDim,vocabFilename,
                                     wordMatrixFilename=wordMatrixFilename)
 
     #print practiceNeuralNet.getAccuracy(practiceNeuralNet.trainingSet)
-    practiceNeuralNet.train(300,1,True)
-
+    practiceNeuralNet.train(2000,1,True)
+    print practiceNeuralNet.getAccuracy(practiceNeuralNet.trainingSet)
 
 # testForwardPropagation(3,300,"../data/ibcVocabulary.pkl",
 #                            "../data/alteredIBCData.pkl")

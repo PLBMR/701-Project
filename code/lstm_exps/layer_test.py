@@ -48,7 +48,7 @@ Y_train = [Y[i] for i in train]
 
 # Important change words into indicies
 for i in range(len(X_train)):
-	
+	seq = X_train[i]
 	new_seq = [np.zeros(n_symbols) for w in seq]
 
 	for j in range(len(seq)):
@@ -56,6 +56,7 @@ for i in range(len(X_train)):
 
 	X_train[i] = np.array(new_seq)
 	Y_train[i] = np.array([Y_train[i]] * len(X_train[i]))
+	
 
 new_X_train = pad_sequences(X_train)
 new_Y_train = pad_sequences(Y_train)

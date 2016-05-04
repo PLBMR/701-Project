@@ -46,17 +46,12 @@ train = sample(range(len(X)), int(len(X)*0.8))
 X_train = [X[i] for i in train]
 Y_train = [Y[i] for i in train]
 
-X_train = np.array(X_train)
-Y_train = np.array(Y_train)
-
 # Important change words into indicies
 for i in range(len(X_train)):
-	seq = X_train[i]
-
+	
 	new_seq = [np.zeros(n_symbols) for w in seq]
 
 	for j in range(len(seq)):
-		w = seq[j]
 		new_seq[j][index_dict[w]] = 1
 
 	X_train[i] = np.array(new_seq)
@@ -71,7 +66,8 @@ print new_Y_train.shape
 # Now the actual model - 256/128 are random guesses for final dimensions...
 model = Sequential()
 model.add(Embedding(output_dim=300, input_dim=n_symbols, mask_zero=True, weights=[embedding_weights])) # note you have to put embedding weights in a list by convention
-model.add(LSTM(output_dim=128, activation='sigmoid', inner_activation='hard_sigmoid'))
+#model.add(LSTM(output_dim=128, activation='sigmoid', inner_activation='hard_sigmoid'))
+model.add(Dense(64, activation='relu'))
 model.add(Dropout(0.5))
 model.add(Dense(1))
 model.add(Activation('sigmoid'))

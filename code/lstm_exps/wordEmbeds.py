@@ -23,10 +23,10 @@ def tree_to_seq(tree):
 		if word in model:
 			vec = model[word]
 		else:
-			seq.append([0. for i in range(300)])
+			# seq.append([0. for i in range(300)])
 			vec = [0.0001 for i in range(300)]
 
-		seq.append(vec)
+		# seq.append(vec)
 		all_words[word] = vec
 
 	# TODO: comment and fix this hack..

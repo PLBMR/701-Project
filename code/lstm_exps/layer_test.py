@@ -49,36 +49,41 @@ Y_train = [Y[i] for i in train]
 # Important change words into indicies
 for i in range(len(X_train)):
 	seq = X_train[i]
-	new_seq = [np.zeros(n_symbols) for w in seq]
+	# new_seq = [np.zeros(n_symbols) for w in seq]
 
-	for j in range(len(seq)):
-		new_seq[j][index_dict[w]] = 1
+	# for j in range(len(seq)):
+	# 	new_seq[j][index_dict[w]] = 1
+
+	new_seq = [index_dict[w] for w in seq]
 
 	X_train[i] = np.array(new_seq)
 	Y_train[i] = np.array([Y_train[i]] * len(X_train[i]))
-	
+
 
 new_X_train = pad_sequences(X_train)
 new_Y_train = pad_sequences(Y_train)
 print new_X_train.shape
 print new_Y_train.shape
 
+# Just the length of the longest time sequence..nbd
+max_length = len(new_X_train[0])
 
 # Now the actual model - 256/128 are random guesses for final dimensions...
 model = Sequential()
-model.add(Embedding(output_dim=300, input_dim=n_symbols, mask_zero=True, weights=[embedding_weights])) # note you have to put embedding weights in a list by convention
-#model.add(LSTM(output_dim=128, activation='sigmoid', inner_activation='hard_sigmoid'))
-model.add(Dense(64, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(1))
-model.add(Activation('sigmoid'))
+model.add(Embedding(output_dim=300, input_dim=n_symbols, input_length=60, mask_zero=True, weights=[embedding_weights])) # note you have to put embedding weights in a list by convention
+model.add(LSTM(output_dim=128, activation='sigmoid', inner_activation='hard_sigmoid'))
+#model.add(Dense(64, activation='relu'))
+# model.add(Dropout(0.5))
+model.add(Dense(60))
+model.add(Activation('softmax'))
 
 model.compile(loss='binary_crossentropy',
               optimizer='rmsprop',
               metrics=['accuracy'])
 
-model.train_on_batch(np.array(X_train[1]), np.array(Y_train[1]))
 
-# model.fit(np.array(X_train), np.array(Y_train), batch_size=16, nb_epoch=5)
 
-score = model.evaluate(X, Y, batch_size=16)
+#model.train_on_batch(np.array(X_train[1]), np.array(Y_train[1]))
+
+model.fit(new_X_train, new_Y_train, batch_size=16, nb_epoch=5)
+# score = model.evaluate(X, Y, batch_size=16)

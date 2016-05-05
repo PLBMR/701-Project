@@ -85,5 +85,5 @@ model.compile(loss='binary_crossentropy',
 
 #model.train_on_batch(np.array(X_train[1]), np.array(Y_train[1]))
 
-model.fit(new_X_train, new_Y_train, batch_size=16, nb_epoch=5)
+model.fit(new_X_train, new_Y_train, batch_size=16, nb_epoch=1000)
 # score = model.evaluate(X, Y, batch_size=16)

@@ -11,6 +11,8 @@ Add 'PATH/TO/701-Project:/PATH/TO/701-Project/util' to PYTHONPATH
 * gensim
 * numpy
 * sklearn
+* keras
+* theano
 
 ###Data dependecies:
 Download and place/un-zip in data subdirectory
